@@ -1,0 +1,97 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+package hydrologycontrol;
+
+option go_package = "proto/";
+
+service HydrologyControlService {
+    rpc Create(CreateRequest) returns (google.protobuf.Empty);
+    rpc Delete(DeleteRequest) returns (google.protobuf.Empty);
+    rpc Update(UpdateRequest) returns (google.protobuf.Empty);
+    rpc Get(GetRequest) returns (GetResponse);
+    rpc CheckValue(CheckValueRequest) returns (CheckValueResponse);
+    rpc GetDate(GetDateRequest) returns (GetDateResponse);
+    rpc GetInterval(GetIntervalRequest) returns (GetIntervalResponse);
+}
+
+message CreateRequest {
+    uint32 post_code = 1;
+    ControlType type = 2;
+    google.protobuf.Timestamp date_start = 3;
+    uint32 value = 4;
+    
+}
+
+message DeleteRequest {
+    string id = 1;
+}
+
+message UpdateRequest {
+    repeated ControlValue data = 1; 
+}
+
+message GetRequest {
+    uint32 post_code = 1;
+    ControlType type = 2;
+    uint32 page = 3; 
+}
+message GetResponse {
+    uint32 page = 1;
+    uint32 max_page = 2;
+    repeated ControlValue data = 3;
+}
+
+message CheckValueRequest {
+    google.protobuf.Timestamp date = 1;
+    uint32 post_code = 2;
+    uint32 value = 3;
+}
+message CheckValueResponse {
+    uint32 excess = 1;
+}
+
+message GetDateRequest {
+    uint32 post_code = 1;
+    google.protobuf.Timestamp date = 2;
+}
+message GetDateResponse {
+    AllControlValues data = 1;
+}
+
+message GetIntervalRequest {
+    uint32 post_code = 1;
+    google.protobuf.Timestamp start_date = 2;
+    google.protobuf.Timestamp end_date = 3;
+}
+
+
+message GetIntervalResponse {
+    repeated AllControlValues data = 1;
+}
+
+message ControlValue {
+    string id = 1;
+    uint32 post_code = 2;
+    ControlType type = 3;
+    google.protobuf.Timestamp date_start = 4;
+    google.protobuf.Timestamp date_end = 5;
+    uint32 value = 6;
+}
+
+message AllControlValues {
+    uint32 norm = 1;
+    uint32 floodplain = 2;
+    uint32 adverse = 3;
+    uint32 dangerous = 4;
+}
+
+enum ControlType {
+    NONE = 0;
+    NORM = 1;
+    FLOODPLAIN = 2;
+    ADVERSE = 3;
+    DANGEROUS = 4;
+}
