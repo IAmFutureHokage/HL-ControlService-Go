@@ -4,14 +4,13 @@
 // - protoc             v4.25.0
 // source: proto/hydrology_control_service.proto
 
-package proto
+package HL_ControlService_Go
 
 import (
 	context "context"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -33,9 +32,9 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type HydrologyControlServiceClient interface {
-	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	Update(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*CreateResponse, error)
+	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
+	Update(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
 	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error)
 	CheckValue(ctx context.Context, in *CheckValueRequest, opts ...grpc.CallOption) (*CheckValueResponse, error)
 	GetDate(ctx context.Context, in *GetDateRequest, opts ...grpc.CallOption) (*GetDateResponse, error)
@@ -50,8 +49,8 @@ func NewHydrologyControlServiceClient(cc grpc.ClientConnInterface) HydrologyCont
 	return &hydrologyControlServiceClient{cc}
 }
 
-func (c *hydrologyControlServiceClient) Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
+func (c *hydrologyControlServiceClient) Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*CreateResponse, error) {
+	out := new(CreateResponse)
 	err := c.cc.Invoke(ctx, HydrologyControlService_Create_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -59,8 +58,8 @@ func (c *hydrologyControlServiceClient) Create(ctx context.Context, in *CreateRe
 	return out, nil
 }
 
-func (c *hydrologyControlServiceClient) Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
+func (c *hydrologyControlServiceClient) Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error) {
+	out := new(DeleteResponse)
 	err := c.cc.Invoke(ctx, HydrologyControlService_Delete_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -68,8 +67,8 @@ func (c *hydrologyControlServiceClient) Delete(ctx context.Context, in *DeleteRe
 	return out, nil
 }
 
-func (c *hydrologyControlServiceClient) Update(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
+func (c *hydrologyControlServiceClient) Update(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*UpdateResponse, error) {
+	out := new(UpdateResponse)
 	err := c.cc.Invoke(ctx, HydrologyControlService_Update_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -117,9 +116,9 @@ func (c *hydrologyControlServiceClient) GetInterval(ctx context.Context, in *Get
 // All implementations must embed UnimplementedHydrologyControlServiceServer
 // for forward compatibility
 type HydrologyControlServiceServer interface {
-	Create(context.Context, *CreateRequest) (*emptypb.Empty, error)
-	Delete(context.Context, *DeleteRequest) (*emptypb.Empty, error)
-	Update(context.Context, *UpdateRequest) (*emptypb.Empty, error)
+	Create(context.Context, *CreateRequest) (*CreateResponse, error)
+	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
+	Update(context.Context, *UpdateRequest) (*UpdateResponse, error)
 	Get(context.Context, *GetRequest) (*GetResponse, error)
 	CheckValue(context.Context, *CheckValueRequest) (*CheckValueResponse, error)
 	GetDate(context.Context, *GetDateRequest) (*GetDateResponse, error)
@@ -131,13 +130,13 @@ type HydrologyControlServiceServer interface {
 type UnimplementedHydrologyControlServiceServer struct {
 }
 
-func (UnimplementedHydrologyControlServiceServer) Create(context.Context, *CreateRequest) (*emptypb.Empty, error) {
+func (UnimplementedHydrologyControlServiceServer) Create(context.Context, *CreateRequest) (*CreateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
 }
-func (UnimplementedHydrologyControlServiceServer) Delete(context.Context, *DeleteRequest) (*emptypb.Empty, error) {
+func (UnimplementedHydrologyControlServiceServer) Delete(context.Context, *DeleteRequest) (*DeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
-func (UnimplementedHydrologyControlServiceServer) Update(context.Context, *UpdateRequest) (*emptypb.Empty, error) {
+func (UnimplementedHydrologyControlServiceServer) Update(context.Context, *UpdateRequest) (*UpdateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
 }
 func (UnimplementedHydrologyControlServiceServer) Get(context.Context, *GetRequest) (*GetResponse, error) {
