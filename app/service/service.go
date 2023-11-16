@@ -1,4 +1,4 @@
-package services
+package service
 
 import (
 	pb "github.com/IAmFutureHokage/HL-ControlService-Go/proto"
