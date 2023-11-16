@@ -6,9 +6,9 @@ import (
 
 type NFAD struct {
 	ID        string `gorm:"primarykey"`
-	PostCode  int32
+	PostCode  uint32
 	Type      ControlType
 	DateStart time.Time
 	DateEnd   time.Time
-	Value     int32
+	Value     uint32
 }
