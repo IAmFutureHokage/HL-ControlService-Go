@@ -11,8 +11,9 @@ message NFAD {
     uint32 post_code = 2;
     ControlType type = 3;
     google.protobuf.Timestamp date_start = 4;
-    google.protobuf.Timestamp date_end = 5;
-    uint32 value = 6;
+    string prev_id = 5;
+    string next_id = 6;
+    uint32 value = 7;
 }
 
 message AllNFAD {

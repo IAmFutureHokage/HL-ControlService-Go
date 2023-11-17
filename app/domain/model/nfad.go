@@ -9,6 +9,7 @@ type NFAD struct {
 	PostCode  uint32      `gorm:"not null"`
 	Type      ControlType `gorm:"not null"`
 	DateStart time.Time   `gorm:"not null"`
-	DateEnd   time.Time
+	PrevID    string
+	NextID    string
 	Value     uint32 `gorm:"not null"`
 }
