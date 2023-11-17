@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/IAmFutureHokage/HL-ControlService-Go/app/domain/dto"
 	model "github.com/IAmFutureHokage/HL-ControlService-Go/app/domain/model"
 	pb "github.com/IAmFutureHokage/HL-ControlService-Go/proto"
 )
@@ -20,11 +19,12 @@ type ServiceGrpc interface {
 }
 
 type Repository interface {
-	Create(postCode int32, controlType model.ControlType, dateStart time.Time, value int32, response chan<- model.NFAD, errChan chan<- error)
-	Delete(id string, response chan<- bool, errChan chan<- error)
-	Update(data []model.NFAD, response chan<- []model.NFAD, errChan chan<- error)
-	Get(postCode int32, controlType model.ControlType, page uint32, response chan<- dto.GetResponse, errChan chan<- error)
-	CheckValue(date time.Time, postCode int32, value int32, response chan<- dto.CheckValueResponse, errChan chan<- error)
-	GetDate(postCode int32, date time.Time, response chan<- dto.GetDateResponse, errChan chan<- error)
-	GetInterval(postCode int32, startDate time.Time, endDate time.Time, response chan<- dto.GetIntervalResponse, errChan chan<- error)
+	Create(data model.NFAD, status chan error)
+	Delete(id string, status chan error)
+	Update(data model.NFAD, status chan error)
+	GetById(id string, status chan error, data chan *model.NFAD)
+	GetAllByPostCodeAndType(postCode int, typeNfad byte, status chan error, data chan []*model.NFAD)
+	GetActiveByPostCodeAndType(postCode int, typeNfad byte, status chan error, data chan *model.NFAD)
+	GetByDateRange(postCode int, startDate time.Time, endDate time.Time, status chan error, data chan []*model.NFAD)
+	GetByPostCodeAndDate(postCode int, date time.Time, status chan error, data chan []*model.NFAD)
 }
