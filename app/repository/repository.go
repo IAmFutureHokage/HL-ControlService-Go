@@ -59,7 +59,16 @@ func (r RepositoryContext) Update(data model.NFAD, status chan error) {
 		return
 	}
 
-	res := db.Model(&model.NFAD{}).Where("id = ?", data.ID).Updates(data)
+	updateData := map[string]interface{}{
+		"PostCode":  data.PostCode,
+		"Type":      data.Type,
+		"DateStart": data.DateStart,
+		"PrevID":    data.PrevID,
+		"NextID":    data.NextID,
+		"Value":     data.Value,
+	}
+
+	res := db.Model(&model.NFAD{}).Where("id = ?", data.ID).Updates(updateData)
 
 	if res.Error != nil {
 		status <- res.Error
