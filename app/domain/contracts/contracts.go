@@ -25,6 +25,6 @@ type Repository interface {
 	GetById(id string, status chan error, data chan *model.NFAD)
 	GetAllByPostCodeAndType(postCode int, typeNfad byte, status chan error, data chan []*model.NFAD)
 	GetActiveByPostCodeAndType(postCode int, typeNfad byte, status chan error, data chan *model.NFAD)
-	GetByDateRange(postCode int, startDate time.Time, endDate time.Time, status chan error, data chan []*model.NFAD)
 	GetByPostCodeAndDate(postCode int, date time.Time, status chan error, data chan []*model.NFAD)
+	GetByDateRange(postCode int, startDate time.Time, endDate time.Time, status chan error, data chan []*model.NFAD)
 }
