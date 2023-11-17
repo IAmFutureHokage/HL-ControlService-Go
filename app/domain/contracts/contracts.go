@@ -8,7 +8,7 @@ import (
 	pb "github.com/IAmFutureHokage/HL-ControlService-Go/proto"
 )
 
-type ServiceGrpc interface {
+type Service interface {
 	Create(ctx context.Context, req *pb.CreateRequest) (*pb.CreateResponse, error)
 	Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteResponse, error)
 	Update(ctx context.Context, req *pb.UpdateRequest) (*pb.UpdateResponse, error)

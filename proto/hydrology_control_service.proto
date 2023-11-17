@@ -92,7 +92,6 @@ message GetIntervalRequest {
     google.protobuf.Timestamp end_date = 3;
 }
 
-
 message GetIntervalResponse {
     repeated AllNFAD data = 1;
 }
