@@ -29,13 +29,13 @@ func (*ServerContext) Create(ctx context.Context, req *pb.CreateRequest) (*pb.Cr
 
 	go repo.GetActiveByPostCodeAndType(tx, int(req.GetPostCode()), byte(req.GetType()), status, prevNFADcn)
 
-	prevNFAD := <-prevNFADcn
-
 	err = <-status
 	if err != nil {
 		tx.Rollback()
 		return nil, err
 	}
+
+	prevNFAD := <-prevNFADcn
 
 	newNFAD := model.NFAD{
 		ID:        uuid.New().String(),
@@ -100,13 +100,13 @@ func (*ServerContext) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.De
 
 	go repo.GetById(tx, req.Id, status, data)
 
-	getNFDA := <-data
-
 	err = <-status
 	if err != nil {
 		tx.Rollback()
 		return nil, err
 	}
+
+	getNFDA := <-data
 
 	var prevNFAD, nextNFAD *model.NFAD
 
@@ -116,13 +116,14 @@ func (*ServerContext) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.De
 		data = make(chan *model.NFAD)
 
 		go repo.GetById(tx, getNFDA.PrevID, status, data)
-		prevNFAD = <-data
 
 		err = <-status
 		if err != nil {
 			tx.Rollback()
 			return nil, err
 		}
+
+		prevNFAD = <-data
 	}
 
 	if getNFDA.NextID != "" {
@@ -131,13 +132,14 @@ func (*ServerContext) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.De
 		data = make(chan *model.NFAD)
 
 		go repo.GetById(tx, getNFDA.NextID, status, data)
-		nextNFAD = <-data
 
 		err = <-status
 		if err != nil {
 			tx.Rollback()
 			return nil, err
 		}
+
+		nextNFAD = <-data
 	}
 
 	if nextNFAD == nil && prevNFAD != nil {
