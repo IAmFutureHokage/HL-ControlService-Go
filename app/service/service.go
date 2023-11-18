@@ -19,15 +19,21 @@ type ServerContext struct {
 func (*ServerContext) Create(ctx context.Context, req *pb.CreateRequest) (*pb.CreateResponse, error) {
 	repo := new(repository.RepositoryContext)
 
+	tx, err := repo.BeginTransaction()
+	if err != nil {
+		return nil, err
+	}
+
 	status := make(chan error)
 	prevNFADcn := make(chan *model.NFAD)
 
-	go repo.GetActiveByPostCodeAndType(int(req.GetPostCode()), byte(req.GetType()), status, prevNFADcn)
+	go repo.GetActiveByPostCodeAndType(tx, int(req.GetPostCode()), byte(req.GetType()), status, prevNFADcn)
 
 	prevNFAD := <-prevNFADcn
 
-	err := <-status
+	err = <-status
 	if err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
@@ -41,27 +47,32 @@ func (*ServerContext) Create(ctx context.Context, req *pb.CreateRequest) (*pb.Cr
 
 	if prevNFAD != nil {
 		if !newNFAD.DateStart.After(prevNFAD.DateStart.AddDate(0, 0, 1)) {
+			tx.Rollback()
 			return nil, fmt.Errorf("new NFAD's start date must be at least one day after the previous NFAD's start date")
 		}
 		newNFAD.PrevID = prevNFAD.ID
 		prevNFAD.NextID = newNFAD.ID
 
 		status = make(chan error)
-		go repo.Update(*prevNFAD, status)
+		go repo.Update(tx, *prevNFAD, status)
 
 		err = <-status
 		if err != nil {
+			tx.Rollback()
 			return nil, err
 		}
 	}
 
 	status = make(chan error)
-	go repo.Create(newNFAD, status)
+	go repo.Create(tx, newNFAD, status)
 
 	err = <-status
 	if err != nil {
+		tx.Rollback()
 		return nil, err
 	}
+
+	tx.Commit()
 
 	return &pb.CreateResponse{
 		Nfad: &pb.NFAD{

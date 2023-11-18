@@ -12,18 +12,20 @@ import (
 type RepositoryContext struct {
 }
 
-func (r RepositoryContext) Create(data model.NFAD, status chan error) {
+func (r RepositoryContext) BeginTransaction() (*gorm.DB, error) {
 	db, err := database.OpenDB()
 	if err != nil {
-		status <- err
-		close(status)
-		return
+		return nil, err
 	}
+	return db.Begin(), nil
+}
 
-	res := db.Create(&data)
+func (r RepositoryContext) Create(tx *gorm.DB, data model.NFAD, status chan error) {
+
+	res := tx.Create(&data)
 
 	if res.RowsAffected == 0 {
-		err = errors.New("failed create")
+		err := errors.New("failed to create")
 		status <- err
 		close(status)
 		return
@@ -33,31 +35,28 @@ func (r RepositoryContext) Create(data model.NFAD, status chan error) {
 	close(status)
 }
 
-func (r RepositoryContext) Delete(id string, status chan error) {
-	db, err := database.OpenDB()
-	if err != nil {
-		status <- err
-		close(status)
-		return
-	}
+func (r RepositoryContext) Delete(tx *gorm.DB, id string, status chan error) {
 
 	var nfad model.NFAD
-	res := db.Where("id=?", id).Delete(&nfad)
+	res := tx.Where("id = ?", id).Delete(&nfad)
+
+	if res.Error != nil {
+		status <- res.Error
+		close(status)
+		return
+	}
+
 	if res.RowsAffected == 0 {
 		status <- errors.New("not found")
+		close(status)
+		return
 	}
 
 	status <- nil
 	close(status)
 }
 
-func (r RepositoryContext) Update(data model.NFAD, status chan error) {
-	db, err := database.OpenDB()
-	if err != nil {
-		status <- err
-		close(status)
-		return
-	}
+func (r RepositoryContext) Update(tx *gorm.DB, data model.NFAD, status chan error) {
 
 	updateData := map[string]interface{}{
 		"PostCode":  data.PostCode,
@@ -68,7 +67,7 @@ func (r RepositoryContext) Update(data model.NFAD, status chan error) {
 		"Value":     data.Value,
 	}
 
-	res := db.Model(&model.NFAD{}).Where("id = ?", data.ID).Updates(updateData)
+	res := tx.Model(&model.NFAD{}).Where("id = ?", data.ID).Updates(updateData)
 
 	if res.Error != nil {
 		status <- res.Error
@@ -86,17 +85,9 @@ func (r RepositoryContext) Update(data model.NFAD, status chan error) {
 	close(status)
 }
 
-func (r RepositoryContext) GetById(id string, status chan error, data chan *model.NFAD) {
-	db, err := database.OpenDB()
-	if err != nil {
-		status <- err
-		close(status)
-		close(data)
-		return
-	}
-
+func (r RepositoryContext) GetById(tx *gorm.DB, id string, status chan error, data chan *model.NFAD) {
 	var nfad model.NFAD
-	res := db.First(&nfad, "id = ?", id)
+	res := tx.First(&nfad, "id = ?", id)
 
 	if res.Error != nil {
 		status <- res.Error
@@ -118,17 +109,9 @@ func (r RepositoryContext) GetById(id string, status chan error, data chan *mode
 	close(status)
 }
 
-func (r RepositoryContext) GetAllByPostCodeAndType(postCode int, typeNfad byte, status chan error, data chan []*model.NFAD) {
-	db, err := database.OpenDB()
-	if err != nil {
-		status <- err
-		close(status)
-		close(data)
-		return
-	}
-
+func (r RepositoryContext) GetAllByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte, status chan error, data chan []*model.NFAD) {
 	var nfads []*model.NFAD
-	res := db.Where("post_code = ? AND type = ?", postCode, typeNfad).Find(&nfads)
+	res := tx.Where("post_code = ? AND type = ?", postCode, typeNfad).Find(&nfads)
 
 	if res.Error != nil {
 		status <- res.Error
@@ -150,17 +133,16 @@ func (r RepositoryContext) GetAllByPostCodeAndType(postCode int, typeNfad byte, 
 	close(status)
 }
 
-func (r RepositoryContext) GetActiveByPostCodeAndType(postCode int, typeNfad byte, status chan error, data chan *model.NFAD) {
-	db, err := database.OpenDB()
-	if err != nil {
-		status <- err
+func (r RepositoryContext) GetActiveByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte, status chan error, data chan *model.NFAD) {
+	var nfad model.NFAD
+	res := tx.Where("post_code = ? AND type = ? AND next_id = ?", postCode, typeNfad, "").First(&nfad)
+
+	if res.Error != nil {
+		status <- res.Error
 		close(status)
 		close(data)
 		return
 	}
-
-	var nfad model.NFAD
-	res := db.Where("post_code = ? AND type = ? AND next_id = ?", postCode, typeNfad, "").First(&nfad)
 
 	if res.RowsAffected == 0 {
 		data <- nil
@@ -170,35 +152,20 @@ func (r RepositoryContext) GetActiveByPostCodeAndType(postCode int, typeNfad byt
 		return
 	}
 
-	if res.Error != nil {
-		status <- res.Error
-		close(status)
-		close(data)
-		return
-	}
-
 	data <- &nfad
 	close(data)
 	status <- nil
 	close(status)
 }
 
-func (r RepositoryContext) GetByPostCodeAndDate(postCode int, date time.Time, status chan error, data chan []*model.NFAD) {
-	db, err := database.OpenDB()
-	if err != nil {
-		status <- err
-		close(status)
-		close(data)
-		return
-	}
-
+func (r RepositoryContext) GetByPostCodeAndDate(tx *gorm.DB, postCode int, date time.Time, status chan error, data chan []*model.NFAD) {
 	date = date.Truncate(24 * time.Hour)
 
 	var nfads []*model.NFAD
 
 	for _, typeNfad := range []byte{1, 2, 3, 4} {
 		var nfad model.NFAD
-		res := db.Where("post_code = ? AND type = ? AND date_start <= ?", postCode, typeNfad, date).Order("date_start desc").First(&nfad)
+		res := tx.Where("post_code = ? AND type = ? AND date_start <= ?", postCode, typeNfad, date).Order("date_start desc").First(&nfad)
 
 		if res.Error != nil {
 			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
@@ -226,15 +193,7 @@ func (r RepositoryContext) GetByPostCodeAndDate(postCode int, date time.Time, st
 	close(status)
 }
 
-func (r RepositoryContext) GetByDateRange(postCode int, startDate time.Time, endDate time.Time, status chan error, data chan []*model.NFAD) {
-	db, err := database.OpenDB()
-	if err != nil {
-		status <- err
-		close(status)
-		close(data)
-		return
-	}
-
+func (r RepositoryContext) GetByDateRange(tx *gorm.DB, postCode int, startDate, endDate time.Time, status chan error, data chan []*model.NFAD) {
 	startDate = startDate.Truncate(24 * time.Hour)
 	endDate = endDate.Truncate(24 * time.Hour)
 
@@ -242,7 +201,7 @@ func (r RepositoryContext) GetByDateRange(postCode int, startDate time.Time, end
 
 	for _, typeNfad := range []byte{1, 2, 3, 4} {
 		var nfad model.NFAD
-		res := db.Where("post_code = ? AND type = ? AND date_start <= ?", postCode, typeNfad, endDate).Order("date_start DESC").First(&nfad)
+		res := tx.Where("post_code = ? AND type = ? AND date_start <= ?", postCode, typeNfad, endDate).Order("date_start desc").First(&nfad)
 
 		if res.Error != nil {
 			if errors.Is(res.Error, gorm.ErrRecordNotFound) {

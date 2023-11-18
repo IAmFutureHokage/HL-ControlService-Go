@@ -6,6 +6,7 @@ import (
 
 	model "github.com/IAmFutureHokage/HL-ControlService-Go/app/domain/model"
 	pb "github.com/IAmFutureHokage/HL-ControlService-Go/proto"
+	"gorm.io/gorm"
 )
 
 type Service interface {
@@ -19,12 +20,12 @@ type Service interface {
 }
 
 type Repository interface {
-	Create(data model.NFAD, status chan error)
-	Delete(id string, status chan error)
-	Update(data model.NFAD, status chan error)
-	GetById(id string, status chan error, data chan *model.NFAD)
-	GetAllByPostCodeAndType(postCode int, typeNfad byte, status chan error, data chan []*model.NFAD)
-	GetActiveByPostCodeAndType(postCode int, typeNfad byte, status chan error, data chan *model.NFAD)
-	GetByPostCodeAndDate(postCode int, date time.Time, status chan error, data chan []*model.NFAD)
-	GetByDateRange(postCode int, startDate time.Time, endDate time.Time, status chan error, data chan []*model.NFAD)
+	Create(tx *gorm.DB, data model.NFAD, status chan error)
+	Delete(tx *gorm.DB, id string, status chan error)
+	Update(tx *gorm.DB, data model.NFAD, status chan error)
+	GetById(tx *gorm.DB, id string, status chan error, data chan *model.NFAD)
+	GetAllByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte, status chan error, data chan []*model.NFAD)
+	GetActiveByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte, status chan error, data chan *model.NFAD)
+	GetByPostCodeAndDate(tx *gorm.DB, postCode int, date time.Time, status chan error, data chan []*model.NFAD)
+	GetByDateRange(tx *gorm.DB, postCode int, startDate time.Time, endDate time.Time, status chan error, data chan []*model.NFAD)
 }
