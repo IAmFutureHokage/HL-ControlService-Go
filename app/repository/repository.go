@@ -160,17 +160,18 @@ func (r RepositoryContext) GetActiveByPostCodeAndType(postCode int, typeNfad byt
 	}
 
 	var nfad model.NFAD
-	res := db.Where("post_code = ? AND type = ? AND next_id IS NULL", postCode, typeNfad).First(&nfad)
+	res := db.Where("post_code = ? AND type = ? AND next_id = ?", postCode, typeNfad, "").First(&nfad)
 
-	if res.Error != nil {
-		status <- res.Error
-		close(status)
+	if res.RowsAffected == 0 {
+		data <- nil
 		close(data)
+		status <- nil
+		close(status)
 		return
 	}
 
-	if res.RowsAffected == 0 {
-		status <- errors.New("no rows affected")
+	if res.Error != nil {
+		status <- res.Error
 		close(status)
 		close(data)
 		return
