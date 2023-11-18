@@ -46,7 +46,7 @@ func (*ServerContext) Create(ctx context.Context, req *pb.CreateRequest) (*pb.Cr
 	}
 
 	if prevNFAD != nil {
-		if !newNFAD.DateStart.After(prevNFAD.DateStart.AddDate(0, 0, 1)) {
+		if !newNFAD.DateStart.After(prevNFAD.DateStart) {
 			tx.Rollback()
 			return nil, fmt.Errorf("new NFAD's start date must be at least one day after the previous NFAD's start date")
 		}
