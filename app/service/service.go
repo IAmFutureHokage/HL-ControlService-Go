@@ -85,3 +85,111 @@ func (*ServerContext) Create(ctx context.Context, req *pb.CreateRequest) (*pb.Cr
 		},
 	}, nil
 }
+
+func (*ServerContext) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteResponse, error) {
+
+	repo := new(repository.RepositoryContext)
+
+	tx, err := repo.BeginTransaction()
+	if err != nil {
+		return nil, err
+	}
+
+	status := make(chan error)
+	data := make(chan *model.NFAD)
+
+	go repo.GetById(tx, req.Id, status, data)
+
+	getNFDA := <-data
+
+	err = <-status
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	var prevNFAD, nextNFAD *model.NFAD
+
+	if getNFDA.PrevID != "" {
+
+		status = make(chan error)
+		data = make(chan *model.NFAD)
+
+		go repo.GetById(tx, getNFDA.PrevID, status, data)
+		prevNFAD = <-data
+
+		err = <-status
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+	}
+
+	if getNFDA.NextID != "" {
+
+		status = make(chan error)
+		data = make(chan *model.NFAD)
+
+		go repo.GetById(tx, getNFDA.NextID, status, data)
+		nextNFAD = <-data
+
+		err = <-status
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+	}
+
+	if nextNFAD == nil && prevNFAD != nil {
+		prevNFAD.NextID = ""
+	}
+
+	if nextNFAD != nil && prevNFAD == nil {
+		nextNFAD.PrevID = ""
+		nextNFAD.DateStart = getNFDA.DateStart
+	}
+
+	if nextNFAD != nil && prevNFAD != nil {
+		prevNFAD.NextID = nextNFAD.ID
+		nextNFAD.PrevID = prevNFAD.ID
+		nextNFAD.DateStart = getNFDA.DateStart
+	}
+
+	if prevNFAD != nil {
+		status = make(chan error)
+		go repo.Update(tx, *prevNFAD, status)
+
+		err = <-status
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+	}
+
+	if nextNFAD != nil {
+		status = make(chan error)
+		go repo.Update(tx, *nextNFAD, status)
+
+		err = <-status
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+	}
+
+	status = make(chan error)
+
+	go repo.Delete(tx, getNFDA.ID, status)
+
+	err = <-status
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	tx.Commit()
+
+	return &pb.DeleteResponse{
+		Success: true,
+	}, nil
+}
