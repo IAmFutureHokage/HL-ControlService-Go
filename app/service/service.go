@@ -384,6 +384,7 @@ func (*ServerContext) GetDate(ctx context.Context, req *pb.GetDateRequest) (*pb.
 	tx.Commit()
 	return &pb.GetDateResponse{
 		Data: &pb.AllNFAD{
+			Date:       req.Date,
 			Norm:       uint32(norm),
 			Floodplain: uint32(floodplan),
 			Adverse:    uint32(adverse),

@@ -212,34 +212,31 @@ func (r RepositoryContext) GetByDateRange(tx *gorm.DB, postCode int, startDate, 
 
 	var nfads []*model.NFAD
 
-	for _, typeNfad := range []byte{1, 2, 3, 4} {
-		var nfad model.NFAD
-		res := tx.Where("post_code = ? AND type = ? AND date_start <= ?", postCode, typeNfad, endDate).Order("date_start desc").First(&nfad)
+	res := tx.Where("post_code = ? AND date_start <= ? AND (next_id IS NULL OR next_id IN (SELECT id FROM nfads WHERE date_start >= ?))", postCode, endDate, startDate).Order("date_start desc").Find(&nfads)
 
-		if res.Error != nil {
-			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-				continue
-			}
-			status <- res.Error
+	if res.Error != nil {
+		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+			status <- errors.New("no records found for the specified range")
 			close(status)
 			close(data)
 			return
 		}
-
-		if nfad.DateStart.Before(startDate) {
-			nfads = append(nfads, &nfad)
-		}
-	}
-
-	if len(nfads) == 0 {
-		status <- errors.New("no records found for the specified range")
+		status <- res.Error
 		close(status)
 		close(data)
 		return
 	}
 
-	data <- nfads
-	close(data)
+	if len(nfads) == 0 {
+		status <- errors.New("no records found for the specified range")
+		close(status)
+		data <- nfads
+		close(data)
+		return
+	}
+
 	status <- nil
 	close(status)
+	data <- nfads
+	close(data)
 }

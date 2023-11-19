@@ -17,10 +17,11 @@ message NFAD {
 }
 
 message AllNFAD {
-    uint32 norm = 1;
-    uint32 floodplain = 2;
-    uint32 adverse = 3;
-    uint32 dangerous = 4;
+    google.protobuf.Timestamp date = 1;
+    uint32 norm = 2;
+    uint32 floodplain = 3;
+    uint32 adverse = 4;
+    uint32 dangerous = 5;
 }
 
 enum ControlType {
