@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/IAmFutureHokage/HL-ControlService-Go/app/domain/model"
@@ -193,5 +195,199 @@ func (*ServerContext) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.De
 
 	return &pb.DeleteResponse{
 		Success: true,
+	}, nil
+}
+
+func (*ServerContext) Update(ctx context.Context, req *pb.UpdateRequest) (*pb.UpdateResponse, error) {
+	repo := new(repository.RepositoryContext)
+
+	tx, err := repo.BeginTransaction()
+	if err != nil {
+		return nil, err
+	}
+	if len(req.Data) < 1 {
+		return nil, errors.New("no data provided")
+	}
+
+	if len(req.Data) != 1 {
+
+		for i := 0; i < len(req.Data)-1; i++ {
+			current := req.Data[i]
+			next := req.Data[i+1]
+
+			if current.PostCode != next.PostCode ||
+				current.Type != next.Type ||
+				current.Id != next.PrevId ||
+				!next.DateStart.AsTime().Truncate(24*time.Hour).After(current.DateStart.AsTime().Truncate(24*time.Hour)) {
+				return nil, errors.New("bad data")
+			}
+		}
+	}
+
+	status := make(chan error)
+	close(status)
+
+	for _, pbNFAD := range req.Data {
+
+		nfad := model.NFAD{
+			ID:        pbNFAD.Id,
+			PostCode:  pbNFAD.PostCode,
+			Type:      model.ControlType(pbNFAD.Type),
+			DateStart: pbNFAD.DateStart.AsTime().Truncate(24 * time.Hour),
+			Value:     pbNFAD.Value,
+			PrevID:    pbNFAD.PrevId,
+			NextID:    pbNFAD.NextId,
+		}
+
+		status = make(chan error)
+		go repo.Update(tx, nfad, status)
+		err = <-status
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+	}
+
+	tx.Commit()
+
+	return &pb.UpdateResponse{
+		Data: req.Data,
+	}, nil
+}
+
+func (*ServerContext) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, error) {
+	repo := new(repository.RepositoryContext)
+
+	tx, err := repo.BeginTransaction()
+	if err != nil {
+		return nil, err
+	}
+
+	const pageSize = 50
+
+	dataChan := make(chan []*model.NFAD)
+	statusChan := make(chan error)
+	totalPagesChan := make(chan int)
+
+	go repo.GetByPostCodeAndType(tx, int(req.PostCode), byte(req.Type), int(req.Page), pageSize, statusChan, dataChan, totalPagesChan)
+	err = <-statusChan
+	if err != nil {
+		return nil, err
+	}
+
+	maxPages := <-totalPagesChan
+	nfads := <-dataChan
+
+	pbNfads := make([]*pb.NFAD, len(nfads))
+	for i, nfad := range nfads {
+		pbNfads[i] = &pb.NFAD{
+			Id:        nfad.ID,
+			PostCode:  nfad.PostCode,
+			Type:      pb.ControlType(nfad.Type.ToByte()),
+			DateStart: timestamppb.New(nfad.DateStart),
+			PrevId:    nfad.PrevID,
+			NextId:    nfad.NextID,
+			Value:     nfad.Value,
+		}
+	}
+
+	tx.Commit()
+
+	return &pb.GetResponse{
+		Page:    req.GetPage(),
+		MaxPage: uint32(maxPages),
+		Data:    pbNfads,
+	}, nil
+}
+
+func (*ServerContext) CheckValue(ctx context.Context, req *pb.CheckValueRequest) (*pb.CheckValueResponse, error) {
+	repo := new(repository.RepositoryContext)
+
+	tx, err := repo.BeginTransaction()
+	if err != nil {
+		return nil, err
+	}
+
+	dataChan := make(chan []*model.NFAD)
+	statusChan := make(chan error)
+
+	go repo.GetByPostCodeAndDate(tx, int(req.PostCode), req.Date.AsTime().Truncate(24*time.Hour), statusChan, dataChan)
+
+	err = <-statusChan
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	nfads := <-dataChan
+
+	sort.Slice(nfads, func(i, j int) bool {
+		return nfads[i].Value < nfads[j].Value
+	})
+
+	desiredType := 0
+	for i := len(nfads) - 1; i >= 0; i-- {
+		if nfads[i].Value < req.Value {
+			desiredType = int(nfads[i].Type)
+			break
+		}
+	}
+
+	tx.Commit()
+
+	return &pb.CheckValueResponse{
+		Excess: uint32(desiredType),
+	}, nil
+}
+
+func (*ServerContext) GetDate(ctx context.Context, req *pb.GetDateRequest) (*pb.GetDateResponse, error) {
+	repo := new(repository.RepositoryContext)
+
+	tx, err := repo.BeginTransaction()
+	if err != nil {
+		return nil, err
+	}
+
+	dataChan := make(chan []*model.NFAD)
+	statusChan := make(chan error)
+
+	go repo.GetByPostCodeAndDate(tx, int(req.PostCode), req.Date.AsTime().Truncate(24*time.Hour), statusChan, dataChan)
+
+	err = <-statusChan
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	nfads := <-dataChan
+
+	norm := 0
+	floodplan := 0
+	adverse := 0
+	dangerous := 0
+
+	for _, nfad := range nfads {
+		switch nfad.Type {
+		case 1:
+			norm = int(nfad.Value)
+		case 2:
+			floodplan = int(nfad.Value)
+		case 3:
+			adverse = int(nfad.Value)
+		case 4:
+			dangerous = int(nfad.Value)
+		default:
+			continue
+		}
+	}
+
+	tx.Commit()
+	return &pb.GetDateResponse{
+		Data: &pb.AllNFAD{
+			Norm:       uint32(norm),
+			Floodplain: uint32(floodplan),
+			Adverse:    uint32(adverse),
+			Dangerous:  uint32(dangerous),
+		},
 	}, nil
 }
