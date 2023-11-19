@@ -5,16 +5,18 @@ import (
 	"log"
 
 	"github.com/IAmFutureHokage/HL-ControlService-Go/app/domain/model"
+	"github.com/spf13/viper"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func OpenDB() (*gorm.DB, error) {
-	host := "localhost"
-	port := "5432"
-	dbName := "lolkek"
-	dbUser := "postgres"
-	password := "Primlab2020"
+	host := viper.GetString("database.host")
+	port := viper.GetString("database.port")
+	dbName := viper.GetString("database.dbname")
+	dbUser := viper.GetString("database.user")
+	password := viper.GetString("database.password")
+
 	dsn := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
 		host,
 		port,

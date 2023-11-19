@@ -1,27 +1,44 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"net"
+	"os"
 
 	"github.com/IAmFutureHokage/HL-ControlService-Go/app/service"
 	"github.com/IAmFutureHokage/HL-ControlService-Go/database"
 	pb "github.com/IAmFutureHokage/HL-ControlService-Go/proto"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 )
 
-var (
-	port = flag.Int("port", 50051, "gRPC server port")
-)
+func init() {
+	env := os.Getenv("APP_ENV")
+	if env == "" {
+		env = "development"
+	}
+
+	viper.SetConfigName(env)
+	viper.AddConfigPath("./config")
+	viper.SetConfigType("yaml")
+
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalf("Error reading config file: %s", err)
+	}
+}
 
 func main() {
 	fmt.Println("gRPC server running ...")
 
+	port := viper.GetInt("server.port")
+	if port == 0 {
+		log.Fatal("Server port is not set in the config file")
+	}
+
 	_, _ = database.OpenDB()
 
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
