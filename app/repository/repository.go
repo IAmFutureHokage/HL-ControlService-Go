@@ -96,13 +96,6 @@ func (r RepositoryContext) GetById(tx *gorm.DB, id string, status chan error, da
 		return
 	}
 
-	if res.RowsAffected == 0 {
-		status <- errors.New("no rows affected")
-		close(status)
-		close(data)
-		return
-	}
-
 	status <- nil
 	close(status)
 	data <- &nfad
