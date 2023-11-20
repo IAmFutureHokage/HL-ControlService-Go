@@ -103,35 +103,27 @@ func (r RepositoryContext) GetById(tx *gorm.DB, id string, status chan error, da
 		return
 	}
 
-	data <- &nfad
-	close(data)
 	status <- nil
 	close(status)
+	data <- &nfad
+	close(data)
 }
 
 func (r RepositoryContext) GetActiveByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte, status chan error, data chan *model.NFAD) {
 	var nfad model.NFAD
-	res := tx.Where("post_code = ? AND type = ? AND (next_id IS NULL OR next_id = '')", postCode, typeNfad).First(&nfad)
-
-	if res.Error != nil {
-		status <- res.Error
-		close(status)
-		close(data)
-		return
-	}
-
-	if res.RowsAffected == 0 {
+	if err := tx.Where("post_code = ? AND type = ? AND (next_id IS NULL OR next_id = '')", postCode, typeNfad).First(&nfad).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			status <- err
+		} else {
+			status <- nil
+		}
 		data <- nil
-		close(data)
+	} else {
 		status <- nil
-		close(status)
-		return
+		data <- &nfad
 	}
-
-	data <- &nfad
-	close(data)
-	status <- nil
 	close(status)
+	close(data)
 }
 
 func (r RepositoryContext) GetByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte, pageNumber, pageSize int, status chan error, data chan []*model.NFAD, totalPages chan int) {
