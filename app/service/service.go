@@ -373,58 +373,73 @@ func (s *ServerContext) Create(ctx context.Context, req *pb.CreateRequest) (*pb.
 // 	}, nil
 // }
 
-// func (*ServerContext) GetDate(ctx context.Context, req *pb.GetDateRequest) (*pb.GetDateResponse, error) {
-// 	repo := new(repository.RepositoryContext)
+func (*ServerContext) GetDate(ctx context.Context, req *pb.GetDateRequest) (*pb.GetDateResponse, error) {
+	repo := new(repository.RepositoryContext)
 
-// 	tx, err := repo.BeginTransaction()
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	tx, err := repo.BeginTransaction()
+	if err != nil {
+		return nil, err
+	}
 
-// 	dataChan := make(chan []*model.NFAD)
-// 	statusChan := make(chan error)
+	errChan := make(chan error, 1)
+	dataChan := make(chan []*model.NFAD, 1)
 
-// 	go repo.GetByPostCodeAndDate(tx, int(req.PostCode), req.Date.AsTime().Truncate(24*time.Hour), statusChan, dataChan)
+	go func() {
+		defer close(errChan)
+		defer close(dataChan)
 
-// 	err = <-statusChan
-// 	if err != nil {
-// 		tx.Rollback()
-// 		return nil, err
-// 	}
+		nfads, err := repo.GetByPostCodeAndDate(tx, int(req.PostCode), req.Date.AsTime().Truncate(24*time.Hour))
+		errChan <- err
+		if err == nil {
+			dataChan <- nfads
+		}
+	}()
 
-// 	nfads := <-dataChan
+	var nfads []*model.NFAD
 
-// 	norm := 0
-// 	floodplan := 0
-// 	adverse := 0
-// 	dangerous := 0
+	select {
+	case err = <-errChan:
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+		nfads = <-dataChan
+	case <-ctx.Done():
+		tx.Rollback()
+		return nil, ctx.Err()
+	}
 
-// 	for _, nfad := range nfads {
-// 		switch nfad.Type {
-// 		case 1:
-// 			norm = int(nfad.Value)
-// 		case 2:
-// 			floodplan = int(nfad.Value)
-// 		case 3:
-// 			adverse = int(nfad.Value)
-// 		case 4:
-// 			dangerous = int(nfad.Value)
-// 		default:
-// 			continue
-// 		}
-// 	}
+	norm := 0
+	floodplan := 0
+	adverse := 0
+	dangerous := 0
 
-// 	tx.Commit()
-// 	return &pb.GetDateResponse{
-// 		Data: &pb.AllNFAD{
-// 			Date:       req.Date,
-// 			Norm:       uint32(norm),
-// 			Floodplain: uint32(floodplan),
-// 			Adverse:    uint32(adverse),
-// 			Dangerous:  uint32(dangerous),
-// 		},
-// 	}, nil
-// }
+	for _, nfad := range nfads {
+		switch nfad.Type {
+		case 1:
+			norm = int(nfad.Value)
+		case 2:
+			floodplan = int(nfad.Value)
+		case 3:
+			adverse = int(nfad.Value)
+		case 4:
+			dangerous = int(nfad.Value)
+		default:
+			continue
+		}
+	}
+
+	tx.Commit()
+	return &pb.GetDateResponse{
+		Data: &pb.AllNFAD{
+			Date:       req.Date,
+			Norm:       uint32(norm),
+			Floodplain: uint32(floodplan),
+			Adverse:    uint32(adverse),
+			Dangerous:  uint32(dangerous),
+		},
+	}, nil
+}
 
 func (*ServerContext) GetInterval(ctx context.Context, req *pb.GetIntervalRequest) (*pb.GetIntervalResponse, error) {
 	repo := new(repository.RepositoryContext)
