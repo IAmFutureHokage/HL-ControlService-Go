@@ -426,74 +426,89 @@ func (s *ServerContext) Create(ctx context.Context, req *pb.CreateRequest) (*pb.
 // 	}, nil
 // }
 
-// func (*ServerContext) GetInterval(ctx context.Context, req *pb.GetIntervalRequest) (*pb.GetIntervalResponse, error) {
-// 	repo := new(repository.RepositoryContext)
+func (*ServerContext) GetInterval(ctx context.Context, req *pb.GetIntervalRequest) (*pb.GetIntervalResponse, error) {
+	repo := new(repository.RepositoryContext)
 
-// 	tx, err := repo.BeginTransaction()
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	tx, err := repo.BeginTransaction()
+	if err != nil {
+		return nil, err
+	}
 
-// 	dataChan := make(chan []*model.NFAD)
-// 	statusChan := make(chan error)
+	errChan := make(chan error, 1)
+	dataChan := make(chan []*model.NFAD, 1)
 
-// 	startDate := req.StartDate.AsTime()
-// 	endDate := req.EndDate.AsTime()
-// 	numDays := int(endDate.Sub(startDate).Hours()/24) + 1
+	startDate := req.StartDate.AsTime()
+	endDate := req.EndDate.AsTime()
+	numDays := int(endDate.Sub(startDate).Hours()/24) + 1
 
-// 	go repo.GetByDateRange(tx, int(req.PostCode), startDate, endDate, statusChan, dataChan)
+	go func() {
+		defer close(errChan)
+		defer close(dataChan)
 
-// 	err = <-statusChan
-// 	if err != nil {
-// 		tx.Rollback()
-// 		return nil, err
-// 	}
+		nfads, err := repo.GetByDateRange(tx, int(req.PostCode), startDate, endDate)
+		errChan <- err
+		if err == nil {
+			dataChan <- nfads
+		}
+	}()
 
-// 	nfads := <-dataChan
+	var nfads []*model.NFAD
 
-// 	allNfads := make([]*pb.AllNFAD, numDays)
+	select {
+	case err = <-errChan:
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+		nfads = <-dataChan
+	case <-ctx.Done():
+		tx.Rollback()
+		return nil, ctx.Err()
+	}
 
-// 	for i := 0; i < numDays; i++ {
-// 		currentDay := startDate.AddDate(0, 0, i)
-// 		currentDayEnd := currentDay.AddDate(0, 0, 1)
+	allNfads := make([]*pb.AllNFAD, numDays)
 
-// 		allNFAD := &pb.AllNFAD{
-// 			Date:       timestamppb.New(currentDay),
-// 			Norm:       0,
-// 			Floodplain: 0,
-// 			Adverse:    0,
-// 			Dangerous:  0,
-// 		}
+	for i := 0; i < numDays; i++ {
+		currentDay := startDate.AddDate(0, 0, i)
+		currentDayEnd := currentDay.AddDate(0, 0, 1)
 
-// 		for _, nfad := range nfads {
-// 			if nfad.DateStart.Before(currentDayEnd) && (nfad.NextID == "" || isNextDateAfter(nfad.NextID, nfads, currentDay)) {
-// 				switch nfad.Type {
-// 				case 1:
-// 					allNFAD.Norm = nfad.Value
-// 				case 2:
-// 					allNFAD.Floodplain = nfad.Value
-// 				case 3:
-// 					allNFAD.Adverse = nfad.Value
-// 				case 4:
-// 					allNFAD.Dangerous = nfad.Value
-// 				}
-// 			}
-// 		}
+		allNFAD := &pb.AllNFAD{
+			Date:       timestamppb.New(currentDay),
+			Norm:       0,
+			Floodplain: 0,
+			Adverse:    0,
+			Dangerous:  0,
+		}
 
-// 		allNfads[i] = allNFAD
-// 	}
+		for _, nfad := range nfads {
+			if nfad.DateStart.Before(currentDayEnd) && (nfad.NextID == "" || isNextDateAfter(nfad.NextID, nfads, currentDay)) {
+				switch nfad.Type {
+				case 1:
+					allNFAD.Norm = nfad.Value
+				case 2:
+					allNFAD.Floodplain = nfad.Value
+				case 3:
+					allNFAD.Adverse = nfad.Value
+				case 4:
+					allNFAD.Dangerous = nfad.Value
+				}
+			}
+		}
 
-// 	tx.Commit()
-// 	return &pb.GetIntervalResponse{
-// 		Data: allNfads,
-// 	}, nil
-// }
+		allNfads[i] = allNFAD
+	}
 
-// func isNextDateAfter(nextID string, nfads []*model.NFAD, date time.Time) bool {
-// 	for _, nfad := range nfads {
-// 		if nfad.ID == nextID {
-// 			return nfad.DateStart.After(date)
-// 		}
-// 	}
-// 	return false
-// }
+	tx.Commit()
+	return &pb.GetIntervalResponse{
+		Data: allNfads,
+	}, nil
+}
+
+func isNextDateAfter(nextID string, nfads []*model.NFAD, date time.Time) bool {
+	for _, nfad := range nfads {
+		if nfad.ID == nextID {
+			return nfad.DateStart.After(date)
+		}
+	}
+	return false
+}
