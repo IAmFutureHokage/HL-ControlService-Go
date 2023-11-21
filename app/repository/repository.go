@@ -24,17 +24,11 @@ func (r RepositoryContext) Create(tx *gorm.DB, data model.NFAD) error {
 	return tx.Create(&data).Error
 }
 
-func (r RepositoryContext) Delete(tx *gorm.DB, id string, status chan error) {
-
-	var nfad model.NFAD
-	err := tx.Where("id = ?", id).Delete(&nfad).Error
-	status <- err
-
-	close(status)
+func (r RepositoryContext) Delete(tx *gorm.DB, id string) error {
+	return tx.Where("id = ?", id).Delete(&model.NFAD{}).Error
 }
 
 func (r RepositoryContext) Update(tx *gorm.DB, data model.NFAD) error {
-
 	updateData := map[string]interface{}{
 		"PostCode":  data.PostCode,
 		"Type":      data.Type,
@@ -47,18 +41,14 @@ func (r RepositoryContext) Update(tx *gorm.DB, data model.NFAD) error {
 	return tx.Model(&model.NFAD{}).Where("id = ?", data.ID).Updates(updateData).Error
 }
 
-func (r RepositoryContext) GetById(tx *gorm.DB, id string, status chan error, data chan *model.NFAD) {
-
+func (r RepositoryContext) GetById(tx *gorm.DB, id string) (*model.NFAD, error) {
 	var nfad model.NFAD
 	err := tx.First(&nfad, "id = ?", id).Error
 
-	status <- err
-	close(status)
-
-	if err == nil {
-		data <- &nfad
+	if err != nil {
+		return nil, err
 	}
-	close(data)
+	return &nfad, nil
 }
 
 func (r RepositoryContext) GetActiveByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte) (*model.NFAD, error) {
@@ -69,35 +59,33 @@ func (r RepositoryContext) GetActiveByPostCodeAndType(tx *gorm.DB, postCode int,
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
-
 	if err != nil {
 		return nil, err
 	}
-
 	return &nfad, nil
 }
 
-func (r RepositoryContext) GetByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte, pageNumber, pageSize int, status chan error, data chan []*model.NFAD, totalPages chan int) {
+func (r RepositoryContext) GetByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte, pageNumber, pageSize int) (int, []*model.NFAD, error) {
 
 	var nfads []*model.NFAD
 	var totalRecords int64
 
 	err := tx.Model(&model.NFAD{}).Where("post_code = ? AND type = ?", postCode, typeNfad).Count(&totalRecords).Error
-	if err == nil {
-		maxPages := int((totalRecords + int64(pageSize) - 1) / int64(pageSize))
-		totalPages <- maxPages
 
-		offset := (pageNumber - 1) * pageSize
-		err = tx.Where("post_code = ? AND type = ?", postCode, typeNfad).Offset(offset).Limit(pageSize).Find(&nfads).Error
-		if err == nil {
-			data <- nfads
-		}
+	if err != nil {
+		return 0, nil, err
 	}
 
-	status <- err
-	close(status)
-	close(totalPages)
-	close(data)
+	maxPages := int((totalRecords + int64(pageSize) - 1) / int64(pageSize))
+	totalPages := maxPages
+
+	offset := (pageNumber - 1) * pageSize
+	err = tx.Where("post_code = ? AND type = ?", postCode, typeNfad).Offset(offset).Limit(pageSize).Find(&nfads).Error
+
+	if err != nil {
+		return 0, nil, err
+	}
+	return totalPages, nfads, nil
 }
 
 func (r RepositoryContext) GetByPostCodeAndDate(tx *gorm.DB, postCode int, date time.Time, status chan error, data chan []*model.NFAD) {

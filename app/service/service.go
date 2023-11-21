@@ -288,50 +288,50 @@ func (s *ServerContext) Create(ctx context.Context, req *pb.CreateRequest) (*pb.
 // 	}, nil
 // }
 
-func (*ServerContext) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, error) {
-	repo := new(repository.RepositoryContext)
+// func (*ServerContext) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, error) {
+// 	repo := new(repository.RepositoryContext)
 
-	tx, err := repo.BeginTransaction()
-	if err != nil {
-		return nil, err
-	}
+// 	tx, err := repo.BeginTransaction()
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	const pageSize = 50
+// 	const pageSize = 50
 
-	dataChan := make(chan []*model.NFAD)
-	statusChan := make(chan error)
-	totalPagesChan := make(chan int)
+// 	dataChan := make(chan []*model.NFAD)
+// 	statusChan := make(chan error)
+// 	totalPagesChan := make(chan int)
 
-	go repo.GetByPostCodeAndType(tx, int(req.PostCode), byte(req.Type), int(req.Page), pageSize, statusChan, dataChan, totalPagesChan)
-	err = <-statusChan
-	if err != nil {
-		return nil, err
-	}
+// 	go repo.GetByPostCodeAndType(tx, int(req.PostCode), byte(req.Type), int(req.Page), pageSize, statusChan, dataChan, totalPagesChan)
+// 	err = <-statusChan
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	maxPages := <-totalPagesChan
-	nfads := <-dataChan
+// 	maxPages := <-totalPagesChan
+// 	nfads := <-dataChan
 
-	pbNfads := make([]*pb.NFAD, len(nfads))
-	for i, nfad := range nfads {
-		pbNfads[i] = &pb.NFAD{
-			Id:        nfad.ID,
-			PostCode:  nfad.PostCode,
-			Type:      pb.ControlType(nfad.Type.ToByte()),
-			DateStart: timestamppb.New(nfad.DateStart),
-			PrevId:    nfad.PrevID,
-			NextId:    nfad.NextID,
-			Value:     nfad.Value,
-		}
-	}
+// 	pbNfads := make([]*pb.NFAD, len(nfads))
+// 	for i, nfad := range nfads {
+// 		pbNfads[i] = &pb.NFAD{
+// 			Id:        nfad.ID,
+// 			PostCode:  nfad.PostCode,
+// 			Type:      pb.ControlType(nfad.Type.ToByte()),
+// 			DateStart: timestamppb.New(nfad.DateStart),
+// 			PrevId:    nfad.PrevID,
+// 			NextId:    nfad.NextID,
+// 			Value:     nfad.Value,
+// 		}
+// 	}
 
-	tx.Commit()
+// 	tx.Commit()
 
-	return &pb.GetResponse{
-		Page:    req.GetPage(),
-		MaxPage: uint32(maxPages),
-		Data:    pbNfads,
-	}, nil
-}
+// 	return &pb.GetResponse{
+// 		Page:    req.GetPage(),
+// 		MaxPage: uint32(maxPages),
+// 		Data:    pbNfads,
+// 	}, nil
+// }
 
 func (*ServerContext) CheckValue(ctx context.Context, req *pb.CheckValueRequest) (*pb.CheckValueResponse, error) {
 	repo := new(repository.RepositoryContext)
