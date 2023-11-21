@@ -4,7 +4,7 @@ import (
 	"context"
 	// "errors"
 	"fmt"
-	// "sort"
+	"sort"
 	"time"
 
 	"github.com/IAmFutureHokage/HL-ControlService-Go/app/domain/model"
@@ -333,45 +333,59 @@ func (s *ServerContext) Create(ctx context.Context, req *pb.CreateRequest) (*pb.
 // 	}, nil
 // }
 
-// func (*ServerContext) CheckValue(ctx context.Context, req *pb.CheckValueRequest) (*pb.CheckValueResponse, error) {
-// 	repo := new(repository.RepositoryContext)
+func (*ServerContext) CheckValue(ctx context.Context, req *pb.CheckValueRequest) (*pb.CheckValueResponse, error) {
+	repo := new(repository.RepositoryContext)
 
-// 	tx, err := repo.BeginTransaction()
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	tx, err := repo.BeginTransaction()
+	if err != nil {
+		return nil, err
+	}
 
-// 	dataChan := make(chan []*model.NFAD)
-// 	statusChan := make(chan error)
+	errChan := make(chan error, 1)
+	dataChan := make(chan []*model.NFAD, 1)
 
-// 	go repo.GetByPostCodeAndDate(tx, int(req.PostCode), req.Date.AsTime().Truncate(24*time.Hour), statusChan, dataChan)
+	go func() {
+		defer close(errChan)
+		defer close(dataChan)
 
-// 	err = <-statusChan
-// 	if err != nil {
-// 		tx.Rollback()
-// 		return nil, err
-// 	}
+		nfads, err := repo.GetByPostCodeAndDate(tx, int(req.PostCode), req.Date.AsTime().Truncate(24*time.Hour))
+		if err == nil {
+			dataChan <- nfads
+		}
+	}()
 
-// 	nfads := <-dataChan
+	var nfads []*model.NFAD
 
-// 	sort.Slice(nfads, func(i, j int) bool {
-// 		return nfads[i].Value < nfads[j].Value
-// 	})
+	select {
+	case err = <-errChan:
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+		nfads = <-dataChan
+	case <-ctx.Done():
+		tx.Rollback()
+		return nil, ctx.Err()
+	}
 
-// 	desiredType := 0
-// 	for i := len(nfads) - 1; i >= 0; i-- {
-// 		if nfads[i].Value < req.Value {
-// 			desiredType = int(nfads[i].Type)
-// 			break
-// 		}
-// 	}
+	sort.Slice(nfads, func(i, j int) bool {
+		return nfads[i].Value < nfads[j].Value
+	})
 
-// 	tx.Commit()
+	desiredType := 0
+	for i := len(nfads) - 1; i >= 0; i-- {
+		if nfads[i].Value < req.Value {
+			desiredType = int(nfads[i].Type)
+			break
+		}
+	}
 
-// 	return &pb.CheckValueResponse{
-// 		Excess: uint32(desiredType),
-// 	}, nil
-// }
+	tx.Commit()
+
+	return &pb.CheckValueResponse{
+		Excess: uint32(desiredType),
+	}, nil
+}
 
 func (*ServerContext) GetDate(ctx context.Context, req *pb.GetDateRequest) (*pb.GetDateResponse, error) {
 	repo := new(repository.RepositoryContext)
