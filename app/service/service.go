@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"errors"
+	// "errors"
 	"fmt"
 	"sort"
 	"time"
@@ -18,7 +18,7 @@ type ServerContext struct {
 	pb.UnimplementedHydrologyControlServiceServer
 }
 
-func (*ServerContext) Create(ctx context.Context, req *pb.CreateRequest) (*pb.CreateResponse, error) {
+func (s *ServerContext) Create(ctx context.Context, req *pb.CreateRequest) (*pb.CreateResponse, error) {
 	repo := new(repository.RepositoryContext)
 
 	tx, err := repo.BeginTransaction()
@@ -26,18 +26,33 @@ func (*ServerContext) Create(ctx context.Context, req *pb.CreateRequest) (*pb.Cr
 		return nil, err
 	}
 
-	status := make(chan error)
-	prevNFADcn := make(chan *model.NFAD)
+	prevErrChan := make(chan error, 1)
+	prevNFADChan := make(chan *model.NFAD, 1)
 
-	go repo.GetActiveByPostCodeAndType(tx, int(req.GetPostCode()), byte(req.GetType()), status, prevNFADcn)
+	go func() {
+		defer close(prevErrChan)
+		defer close(prevNFADChan)
 
-	err = <-status
-	if err != nil {
+		prevNFAD, err := repo.GetActiveByPostCodeAndType(tx, int(req.GetPostCode()), byte(req.GetType()))
+		prevErrChan <- err
+		if err == nil {
+			prevNFADChan <- prevNFAD
+		}
+	}()
+
+	var prevNFAD *model.NFAD
+
+	select {
+	case err = <-prevErrChan:
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+		prevNFAD = <-prevNFADChan
+	case <-ctx.Done():
 		tx.Rollback()
-		return nil, err
+		return nil, ctx.Err()
 	}
-
-	prevNFAD := <-prevNFADcn
 
 	newNFAD := model.NFAD{
 		ID:        uuid.New().String(),
@@ -55,23 +70,41 @@ func (*ServerContext) Create(ctx context.Context, req *pb.CreateRequest) (*pb.Cr
 		newNFAD.PrevID = prevNFAD.ID
 		prevNFAD.NextID = newNFAD.ID
 
-		status = make(chan error)
-		go repo.Update(tx, *prevNFAD, status)
+		updateErrChan := make(chan error, 1)
 
-		err = <-status
+		go func() {
+			defer close(updateErrChan)
+			updateErrChan <- repo.Update(tx, *prevNFAD)
+		}()
+
+		select {
+		case err = <-updateErrChan:
+			if err != nil {
+				tx.Rollback()
+				return nil, err
+			}
+		case <-ctx.Done():
+			tx.Rollback()
+			return nil, ctx.Err()
+		}
+	}
+
+	createErrChan := make(chan error, 1)
+
+	go func() {
+		defer close(createErrChan)
+		createErrChan <- repo.Create(tx, newNFAD)
+	}()
+
+	select {
+	case err = <-createErrChan:
 		if err != nil {
 			tx.Rollback()
 			return nil, err
 		}
-	}
-
-	status = make(chan error)
-	go repo.Create(tx, newNFAD, status)
-
-	err = <-status
-	if err != nil {
+	case <-ctx.Done():
 		tx.Rollback()
-		return nil, err
+		return nil, ctx.Err()
 	}
 
 	tx.Commit()
@@ -88,172 +121,172 @@ func (*ServerContext) Create(ctx context.Context, req *pb.CreateRequest) (*pb.Cr
 	}, nil
 }
 
-func (*ServerContext) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteResponse, error) {
+// func (*ServerContext) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteResponse, error) {
 
-	repo := new(repository.RepositoryContext)
+// 	repo := new(repository.RepositoryContext)
 
-	tx, err := repo.BeginTransaction()
-	if err != nil {
-		return nil, err
-	}
+// 	tx, err := repo.BeginTransaction()
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	status := make(chan error)
-	data := make(chan *model.NFAD)
+// 	status := make(chan error)
+// 	data := make(chan *model.NFAD)
 
-	go repo.GetById(tx, req.Id, status, data)
+// 	go repo.GetById(tx, req.Id, status, data)
 
-	err = <-status
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
+// 	err = <-status
+// 	if err != nil {
+// 		tx.Rollback()
+// 		return nil, err
+// 	}
 
-	getNFDA := <-data
+// 	getNFDA := <-data
 
-	var prevNFAD, nextNFAD *model.NFAD
+// 	var prevNFAD, nextNFAD *model.NFAD
 
-	if getNFDA.PrevID != "" {
+// 	if getNFDA.PrevID != "" {
 
-		status = make(chan error)
-		data = make(chan *model.NFAD)
+// 		status = make(chan error)
+// 		data = make(chan *model.NFAD)
 
-		go repo.GetById(tx, getNFDA.PrevID, status, data)
+// 		go repo.GetById(tx, getNFDA.PrevID, status, data)
 
-		err = <-status
-		if err != nil {
-			tx.Rollback()
-			return nil, err
-		}
+// 		err = <-status
+// 		if err != nil {
+// 			tx.Rollback()
+// 			return nil, err
+// 		}
 
-		prevNFAD = <-data
-	}
+// 		prevNFAD = <-data
+// 	}
 
-	if getNFDA.NextID != "" {
+// 	if getNFDA.NextID != "" {
 
-		status = make(chan error)
-		data = make(chan *model.NFAD)
+// 		status = make(chan error)
+// 		data = make(chan *model.NFAD)
 
-		go repo.GetById(tx, getNFDA.NextID, status, data)
+// 		go repo.GetById(tx, getNFDA.NextID, status, data)
 
-		err = <-status
-		if err != nil {
-			tx.Rollback()
-			return nil, err
-		}
+// 		err = <-status
+// 		if err != nil {
+// 			tx.Rollback()
+// 			return nil, err
+// 		}
 
-		nextNFAD = <-data
-	}
+// 		nextNFAD = <-data
+// 	}
 
-	if nextNFAD == nil && prevNFAD != nil {
-		prevNFAD.NextID = ""
-	}
+// 	if nextNFAD == nil && prevNFAD != nil {
+// 		prevNFAD.NextID = ""
+// 	}
 
-	if nextNFAD != nil && prevNFAD == nil {
-		nextNFAD.PrevID = ""
-		nextNFAD.DateStart = getNFDA.DateStart
-	}
+// 	if nextNFAD != nil && prevNFAD == nil {
+// 		nextNFAD.PrevID = ""
+// 		nextNFAD.DateStart = getNFDA.DateStart
+// 	}
 
-	if nextNFAD != nil && prevNFAD != nil {
-		prevNFAD.NextID = nextNFAD.ID
-		nextNFAD.PrevID = prevNFAD.ID
-		nextNFAD.DateStart = getNFDA.DateStart
-	}
+// 	if nextNFAD != nil && prevNFAD != nil {
+// 		prevNFAD.NextID = nextNFAD.ID
+// 		nextNFAD.PrevID = prevNFAD.ID
+// 		nextNFAD.DateStart = getNFDA.DateStart
+// 	}
 
-	if prevNFAD != nil {
-		status = make(chan error)
-		go repo.Update(tx, *prevNFAD, status)
+// 	if prevNFAD != nil {
+// 		status = make(chan error)
+// 		go repo.Update(tx, *prevNFAD, status)
 
-		err = <-status
-		if err != nil {
-			tx.Rollback()
-			return nil, err
-		}
-	}
+// 		err = <-status
+// 		if err != nil {
+// 			tx.Rollback()
+// 			return nil, err
+// 		}
+// 	}
 
-	if nextNFAD != nil {
-		status = make(chan error)
-		go repo.Update(tx, *nextNFAD, status)
+// 	if nextNFAD != nil {
+// 		status = make(chan error)
+// 		go repo.Update(tx, *nextNFAD, status)
 
-		err = <-status
-		if err != nil {
-			tx.Rollback()
-			return nil, err
-		}
-	}
+// 		err = <-status
+// 		if err != nil {
+// 			tx.Rollback()
+// 			return nil, err
+// 		}
+// 	}
 
-	status = make(chan error)
+// 	status = make(chan error)
 
-	go repo.Delete(tx, getNFDA.ID, status)
+// 	go repo.Delete(tx, getNFDA.ID, status)
 
-	err = <-status
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
+// 	err = <-status
+// 	if err != nil {
+// 		tx.Rollback()
+// 		return nil, err
+// 	}
 
-	tx.Commit()
+// 	tx.Commit()
 
-	return &pb.DeleteResponse{
-		Success: true,
-	}, nil
-}
+// 	return &pb.DeleteResponse{
+// 		Success: true,
+// 	}, nil
+// }
 
-func (*ServerContext) Update(ctx context.Context, req *pb.UpdateRequest) (*pb.UpdateResponse, error) {
-	repo := new(repository.RepositoryContext)
+// func (*ServerContext) Update(ctx context.Context, req *pb.UpdateRequest) (*pb.UpdateResponse, error) {
+// 	repo := new(repository.RepositoryContext)
 
-	tx, err := repo.BeginTransaction()
-	if err != nil {
-		return nil, err
-	}
-	if len(req.Data) < 1 {
-		return nil, errors.New("no data provided")
-	}
+// 	tx, err := repo.BeginTransaction()
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	if len(req.Data) < 1 {
+// 		return nil, errors.New("no data provided")
+// 	}
 
-	if len(req.Data) != 1 {
+// 	if len(req.Data) != 1 {
 
-		for i := 0; i < len(req.Data)-1; i++ {
-			current := req.Data[i]
-			next := req.Data[i+1]
+// 		for i := 0; i < len(req.Data)-1; i++ {
+// 			current := req.Data[i]
+// 			next := req.Data[i+1]
 
-			if current.PostCode != next.PostCode ||
-				current.Type != next.Type ||
-				current.Id != next.PrevId ||
-				!next.DateStart.AsTime().Truncate(24*time.Hour).After(current.DateStart.AsTime().Truncate(24*time.Hour)) {
-				return nil, errors.New("bad data")
-			}
-		}
-	}
+// 			if current.PostCode != next.PostCode ||
+// 				current.Type != next.Type ||
+// 				current.Id != next.PrevId ||
+// 				!next.DateStart.AsTime().Truncate(24*time.Hour).After(current.DateStart.AsTime().Truncate(24*time.Hour)) {
+// 				return nil, errors.New("bad data")
+// 			}
+// 		}
+// 	}
 
-	status := make(chan error)
-	close(status)
+// 	status := make(chan error)
+// 	close(status)
 
-	for _, pbNFAD := range req.Data {
+// 	for _, pbNFAD := range req.Data {
 
-		nfad := model.NFAD{
-			ID:        pbNFAD.Id,
-			PostCode:  pbNFAD.PostCode,
-			Type:      model.ControlType(pbNFAD.Type),
-			DateStart: pbNFAD.DateStart.AsTime().Truncate(24 * time.Hour),
-			Value:     pbNFAD.Value,
-			PrevID:    pbNFAD.PrevId,
-			NextID:    pbNFAD.NextId,
-		}
+// 		nfad := model.NFAD{
+// 			ID:        pbNFAD.Id,
+// 			PostCode:  pbNFAD.PostCode,
+// 			Type:      model.ControlType(pbNFAD.Type),
+// 			DateStart: pbNFAD.DateStart.AsTime().Truncate(24 * time.Hour),
+// 			Value:     pbNFAD.Value,
+// 			PrevID:    pbNFAD.PrevId,
+// 			NextID:    pbNFAD.NextId,
+// 		}
 
-		status = make(chan error)
-		go repo.Update(tx, nfad, status)
-		err = <-status
-		if err != nil {
-			tx.Rollback()
-			return nil, err
-		}
-	}
+// 		status = make(chan error)
+// 		go repo.Update(tx, nfad, status)
+// 		err = <-status
+// 		if err != nil {
+// 			tx.Rollback()
+// 			return nil, err
+// 		}
+// 	}
 
-	tx.Commit()
+// 	tx.Commit()
 
-	return &pb.UpdateResponse{
-		Data: req.Data,
-	}, nil
-}
+// 	return &pb.UpdateResponse{
+// 		Data: req.Data,
+// 	}, nil
+// }
 
 func (*ServerContext) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, error) {
 	repo := new(repository.RepositoryContext)

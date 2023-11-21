@@ -20,11 +20,8 @@ func (r RepositoryContext) BeginTransaction() (*gorm.DB, error) {
 	return db.Begin(), nil
 }
 
-func (r RepositoryContext) Create(tx *gorm.DB, data model.NFAD, status chan error) {
-	err := tx.Create(&data).Error
-	status <- err
-
-	close(status)
+func (r RepositoryContext) Create(tx *gorm.DB, data model.NFAD) error {
+	return tx.Create(&data).Error
 }
 
 func (r RepositoryContext) Delete(tx *gorm.DB, id string, status chan error) {
@@ -36,7 +33,7 @@ func (r RepositoryContext) Delete(tx *gorm.DB, id string, status chan error) {
 	close(status)
 }
 
-func (r RepositoryContext) Update(tx *gorm.DB, data model.NFAD, status chan error) {
+func (r RepositoryContext) Update(tx *gorm.DB, data model.NFAD) error {
 
 	updateData := map[string]interface{}{
 		"PostCode":  data.PostCode,
@@ -47,10 +44,7 @@ func (r RepositoryContext) Update(tx *gorm.DB, data model.NFAD, status chan erro
 		"Value":     data.Value,
 	}
 
-	err := tx.Model(&model.NFAD{}).Where("id = ?", data.ID).Updates(updateData).Error
-	status <- err
-
-	close(status)
+	return tx.Model(&model.NFAD{}).Where("id = ?", data.ID).Updates(updateData).Error
 }
 
 func (r RepositoryContext) GetById(tx *gorm.DB, id string, status chan error, data chan *model.NFAD) {
@@ -67,23 +61,20 @@ func (r RepositoryContext) GetById(tx *gorm.DB, id string, status chan error, da
 	close(data)
 }
 
-func (r RepositoryContext) GetActiveByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte, status chan error, data chan *model.NFAD) {
-
+func (r RepositoryContext) GetActiveByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte) (*model.NFAD, error) {
 	var nfad model.NFAD
 
 	err := tx.Where("post_code = ? AND type = ? AND (next_id IS NULL OR next_id = '')", postCode, typeNfad).First(&nfad).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		err = nil
+		return nil, nil
 	}
 
-	status <- err
-	close(status)
-
-	if err == nil {
-		data <- &nfad
+	if err != nil {
+		return nil, err
 	}
-	close(data)
+
+	return &nfad, nil
 }
 
 func (r RepositoryContext) GetByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte, pageNumber, pageSize int, status chan error, data chan []*model.NFAD, totalPages chan int) {
