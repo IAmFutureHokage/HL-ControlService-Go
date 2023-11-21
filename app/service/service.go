@@ -4,7 +4,7 @@ import (
 	"context"
 	// "errors"
 	"fmt"
-	"sort"
+	// "sort"
 	"time"
 
 	"github.com/IAmFutureHokage/HL-ControlService-Go/app/domain/model"
@@ -333,167 +333,167 @@ func (s *ServerContext) Create(ctx context.Context, req *pb.CreateRequest) (*pb.
 // 	}, nil
 // }
 
-func (*ServerContext) CheckValue(ctx context.Context, req *pb.CheckValueRequest) (*pb.CheckValueResponse, error) {
-	repo := new(repository.RepositoryContext)
+// func (*ServerContext) CheckValue(ctx context.Context, req *pb.CheckValueRequest) (*pb.CheckValueResponse, error) {
+// 	repo := new(repository.RepositoryContext)
 
-	tx, err := repo.BeginTransaction()
-	if err != nil {
-		return nil, err
-	}
+// 	tx, err := repo.BeginTransaction()
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	dataChan := make(chan []*model.NFAD)
-	statusChan := make(chan error)
+// 	dataChan := make(chan []*model.NFAD)
+// 	statusChan := make(chan error)
 
-	go repo.GetByPostCodeAndDate(tx, int(req.PostCode), req.Date.AsTime().Truncate(24*time.Hour), statusChan, dataChan)
+// 	go repo.GetByPostCodeAndDate(tx, int(req.PostCode), req.Date.AsTime().Truncate(24*time.Hour), statusChan, dataChan)
 
-	err = <-statusChan
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
+// 	err = <-statusChan
+// 	if err != nil {
+// 		tx.Rollback()
+// 		return nil, err
+// 	}
 
-	nfads := <-dataChan
+// 	nfads := <-dataChan
 
-	sort.Slice(nfads, func(i, j int) bool {
-		return nfads[i].Value < nfads[j].Value
-	})
+// 	sort.Slice(nfads, func(i, j int) bool {
+// 		return nfads[i].Value < nfads[j].Value
+// 	})
 
-	desiredType := 0
-	for i := len(nfads) - 1; i >= 0; i-- {
-		if nfads[i].Value < req.Value {
-			desiredType = int(nfads[i].Type)
-			break
-		}
-	}
+// 	desiredType := 0
+// 	for i := len(nfads) - 1; i >= 0; i-- {
+// 		if nfads[i].Value < req.Value {
+// 			desiredType = int(nfads[i].Type)
+// 			break
+// 		}
+// 	}
 
-	tx.Commit()
+// 	tx.Commit()
 
-	return &pb.CheckValueResponse{
-		Excess: uint32(desiredType),
-	}, nil
-}
+// 	return &pb.CheckValueResponse{
+// 		Excess: uint32(desiredType),
+// 	}, nil
+// }
 
-func (*ServerContext) GetDate(ctx context.Context, req *pb.GetDateRequest) (*pb.GetDateResponse, error) {
-	repo := new(repository.RepositoryContext)
+// func (*ServerContext) GetDate(ctx context.Context, req *pb.GetDateRequest) (*pb.GetDateResponse, error) {
+// 	repo := new(repository.RepositoryContext)
 
-	tx, err := repo.BeginTransaction()
-	if err != nil {
-		return nil, err
-	}
+// 	tx, err := repo.BeginTransaction()
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	dataChan := make(chan []*model.NFAD)
-	statusChan := make(chan error)
+// 	dataChan := make(chan []*model.NFAD)
+// 	statusChan := make(chan error)
 
-	go repo.GetByPostCodeAndDate(tx, int(req.PostCode), req.Date.AsTime().Truncate(24*time.Hour), statusChan, dataChan)
+// 	go repo.GetByPostCodeAndDate(tx, int(req.PostCode), req.Date.AsTime().Truncate(24*time.Hour), statusChan, dataChan)
 
-	err = <-statusChan
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
+// 	err = <-statusChan
+// 	if err != nil {
+// 		tx.Rollback()
+// 		return nil, err
+// 	}
 
-	nfads := <-dataChan
+// 	nfads := <-dataChan
 
-	norm := 0
-	floodplan := 0
-	adverse := 0
-	dangerous := 0
+// 	norm := 0
+// 	floodplan := 0
+// 	adverse := 0
+// 	dangerous := 0
 
-	for _, nfad := range nfads {
-		switch nfad.Type {
-		case 1:
-			norm = int(nfad.Value)
-		case 2:
-			floodplan = int(nfad.Value)
-		case 3:
-			adverse = int(nfad.Value)
-		case 4:
-			dangerous = int(nfad.Value)
-		default:
-			continue
-		}
-	}
+// 	for _, nfad := range nfads {
+// 		switch nfad.Type {
+// 		case 1:
+// 			norm = int(nfad.Value)
+// 		case 2:
+// 			floodplan = int(nfad.Value)
+// 		case 3:
+// 			adverse = int(nfad.Value)
+// 		case 4:
+// 			dangerous = int(nfad.Value)
+// 		default:
+// 			continue
+// 		}
+// 	}
 
-	tx.Commit()
-	return &pb.GetDateResponse{
-		Data: &pb.AllNFAD{
-			Date:       req.Date,
-			Norm:       uint32(norm),
-			Floodplain: uint32(floodplan),
-			Adverse:    uint32(adverse),
-			Dangerous:  uint32(dangerous),
-		},
-	}, nil
-}
+// 	tx.Commit()
+// 	return &pb.GetDateResponse{
+// 		Data: &pb.AllNFAD{
+// 			Date:       req.Date,
+// 			Norm:       uint32(norm),
+// 			Floodplain: uint32(floodplan),
+// 			Adverse:    uint32(adverse),
+// 			Dangerous:  uint32(dangerous),
+// 		},
+// 	}, nil
+// }
 
-func (*ServerContext) GetInterval(ctx context.Context, req *pb.GetIntervalRequest) (*pb.GetIntervalResponse, error) {
-	repo := new(repository.RepositoryContext)
+// func (*ServerContext) GetInterval(ctx context.Context, req *pb.GetIntervalRequest) (*pb.GetIntervalResponse, error) {
+// 	repo := new(repository.RepositoryContext)
 
-	tx, err := repo.BeginTransaction()
-	if err != nil {
-		return nil, err
-	}
+// 	tx, err := repo.BeginTransaction()
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	dataChan := make(chan []*model.NFAD)
-	statusChan := make(chan error)
+// 	dataChan := make(chan []*model.NFAD)
+// 	statusChan := make(chan error)
 
-	startDate := req.StartDate.AsTime()
-	endDate := req.EndDate.AsTime()
-	numDays := int(endDate.Sub(startDate).Hours()/24) + 1
+// 	startDate := req.StartDate.AsTime()
+// 	endDate := req.EndDate.AsTime()
+// 	numDays := int(endDate.Sub(startDate).Hours()/24) + 1
 
-	go repo.GetByDateRange(tx, int(req.PostCode), startDate, endDate, statusChan, dataChan)
+// 	go repo.GetByDateRange(tx, int(req.PostCode), startDate, endDate, statusChan, dataChan)
 
-	err = <-statusChan
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
+// 	err = <-statusChan
+// 	if err != nil {
+// 		tx.Rollback()
+// 		return nil, err
+// 	}
 
-	nfads := <-dataChan
+// 	nfads := <-dataChan
 
-	allNfads := make([]*pb.AllNFAD, numDays)
+// 	allNfads := make([]*pb.AllNFAD, numDays)
 
-	for i := 0; i < numDays; i++ {
-		currentDay := startDate.AddDate(0, 0, i)
-		currentDayEnd := currentDay.AddDate(0, 0, 1)
+// 	for i := 0; i < numDays; i++ {
+// 		currentDay := startDate.AddDate(0, 0, i)
+// 		currentDayEnd := currentDay.AddDate(0, 0, 1)
 
-		allNFAD := &pb.AllNFAD{
-			Date:       timestamppb.New(currentDay),
-			Norm:       0,
-			Floodplain: 0,
-			Adverse:    0,
-			Dangerous:  0,
-		}
+// 		allNFAD := &pb.AllNFAD{
+// 			Date:       timestamppb.New(currentDay),
+// 			Norm:       0,
+// 			Floodplain: 0,
+// 			Adverse:    0,
+// 			Dangerous:  0,
+// 		}
 
-		for _, nfad := range nfads {
-			if nfad.DateStart.Before(currentDayEnd) && (nfad.NextID == "" || isNextDateAfter(nfad.NextID, nfads, currentDay)) {
-				switch nfad.Type {
-				case 1:
-					allNFAD.Norm = nfad.Value
-				case 2:
-					allNFAD.Floodplain = nfad.Value
-				case 3:
-					allNFAD.Adverse = nfad.Value
-				case 4:
-					allNFAD.Dangerous = nfad.Value
-				}
-			}
-		}
+// 		for _, nfad := range nfads {
+// 			if nfad.DateStart.Before(currentDayEnd) && (nfad.NextID == "" || isNextDateAfter(nfad.NextID, nfads, currentDay)) {
+// 				switch nfad.Type {
+// 				case 1:
+// 					allNFAD.Norm = nfad.Value
+// 				case 2:
+// 					allNFAD.Floodplain = nfad.Value
+// 				case 3:
+// 					allNFAD.Adverse = nfad.Value
+// 				case 4:
+// 					allNFAD.Dangerous = nfad.Value
+// 				}
+// 			}
+// 		}
 
-		allNfads[i] = allNFAD
-	}
+// 		allNfads[i] = allNFAD
+// 	}
 
-	tx.Commit()
-	return &pb.GetIntervalResponse{
-		Data: allNfads,
-	}, nil
-}
+// 	tx.Commit()
+// 	return &pb.GetIntervalResponse{
+// 		Data: allNfads,
+// 	}, nil
+// }
 
-func isNextDateAfter(nextID string, nfads []*model.NFAD, date time.Time) bool {
-	for _, nfad := range nfads {
-		if nfad.ID == nextID {
-			return nfad.DateStart.After(date)
-		}
-	}
-	return false
-}
+// func isNextDateAfter(nextID string, nfads []*model.NFAD, date time.Time) bool {
+// 	for _, nfad := range nfads {
+// 		if nfad.ID == nextID {
+// 			return nfad.DateStart.After(date)
+// 		}
+// 	}
+// 	return false
+// }

@@ -88,41 +88,30 @@ func (r RepositoryContext) GetByPostCodeAndType(tx *gorm.DB, postCode int, typeN
 	return totalPages, nfads, nil
 }
 
-func (r RepositoryContext) GetByPostCodeAndDate(tx *gorm.DB, postCode int, date time.Time, status chan error, data chan []*model.NFAD) {
-
+func (r RepositoryContext) GetByPostCodeAndDate(tx *gorm.DB, postCode int, date time.Time) ([]*model.NFAD, error) {
 	date = date.Truncate(24 * time.Hour)
 
 	var nfads []*model.NFAD
-	var err error
 
-	for _, typeNfad := range []byte{1, 2, 3, 4} {
-		var nfad model.NFAD
-		err := tx.Where("post_code = ? AND type = ? AND date_start <= ?", postCode, typeNfad, date).Order("date_start desc").First(&nfad).Error
+	err := tx.Raw(`
+        SELECT DISTINCT ON (type) *
+        FROM nfads
+        WHERE post_code = ? AND date_start <= ?
+        ORDER BY type, date_start DESC
+    `, postCode, date).Scan(&nfads).Error
 
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				continue
-			}
-			break
-		}
-
-		nfads = append(nfads, &nfad)
+	if err != nil {
+		return nil, err
 	}
 
-	if err == nil && len(nfads) == 0 {
-		err = errors.New("no records found for the specified post code and date")
+	if len(nfads) == 0 {
+		return nil, gorm.ErrRecordNotFound
 	}
 
-	status <- err
-	close(status)
-
-	if err == nil {
-		data <- nfads
-	}
-	close(data)
+	return nfads, nil
 }
 
-func (r RepositoryContext) GetByDateRange(tx *gorm.DB, postCode int, startDate, endDate time.Time, status chan error, data chan []*model.NFAD) {
+func (r RepositoryContext) GetByDateRange(tx *gorm.DB, postCode int, startDate, endDate time.Time) ([]*model.NFAD, error) {
 
 	startDate = startDate.Truncate(24 * time.Hour)
 	endDate = endDate.Truncate(24 * time.Hour)
@@ -131,15 +120,8 @@ func (r RepositoryContext) GetByDateRange(tx *gorm.DB, postCode int, startDate, 
 
 	err := tx.Where("post_code = ? AND date_start <= ? AND (next_id IS NULL OR next_id = '' OR next_id IN (SELECT id FROM nfads WHERE date_start >= ?))", postCode, endDate, startDate).Order("date_start desc").Find(&nfads).Error
 
-	if err == nil && len(nfads) == 0 {
-		err = errors.New("no records found for the specified range")
+	if err != nil {
+		return nil, err
 	}
-
-	status <- err
-	close(status)
-
-	if err == nil {
-		data <- nfads
-	}
-	close(data)
+	return nfads, nil
 }
