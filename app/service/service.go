@@ -366,50 +366,68 @@ func (*ServerContext) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.De
 // 	}, nil
 // }
 
-// func (*ServerContext) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, error) {
-// 	repo := new(repository.RepositoryContext)
+func (*ServerContext) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, error) {
+	repo := new(repository.RepositoryContext)
 
-// 	tx, err := repo.BeginTransaction()
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	tx, err := repo.BeginTransaction()
+	if err != nil {
+		return nil, err
+	}
 
-// 	const pageSize = 50
+	const pageSize = 50
 
-// 	dataChan := make(chan []*model.NFAD)
-// 	statusChan := make(chan error)
-// 	totalPagesChan := make(chan int)
+	errChan := make(chan error, 1)
+	totalPagesChan := make(chan int, 1)
+	dataChan := make(chan []*model.NFAD, 1)
 
-// 	go repo.GetByPostCodeAndType(tx, int(req.PostCode), byte(req.Type), int(req.Page), pageSize, statusChan, dataChan, totalPagesChan)
-// 	err = <-statusChan
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	go func() {
+		defer close(dataChan)
+		defer close(totalPagesChan)
+		defer close(errChan)
 
-// 	maxPages := <-totalPagesChan
-// 	nfads := <-dataChan
+		total, nfads, err := repo.GetByPostCodeAndType(tx, int(req.PostCode), byte(req.Type), int(req.Page), pageSize)
+		errChan <- err
+		if err == nil {
+			totalPagesChan <- total
+			dataChan <- nfads
+		}
+	}()
 
-// 	pbNfads := make([]*pb.NFAD, len(nfads))
-// 	for i, nfad := range nfads {
-// 		pbNfads[i] = &pb.NFAD{
-// 			Id:        nfad.ID,
-// 			PostCode:  nfad.PostCode,
-// 			Type:      pb.ControlType(nfad.Type.ToByte()),
-// 			DateStart: timestamppb.New(nfad.DateStart),
-// 			PrevId:    nfad.PrevID,
-// 			NextId:    nfad.NextID,
-// 			Value:     nfad.Value,
-// 		}
-// 	}
+	select {
+	case err = <-errChan:
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+	case <-ctx.Done():
+		tx.Rollback()
+		return nil, ctx.Err()
+	}
 
-// 	tx.Commit()
+	maxPages := <-totalPagesChan
+	nfads := <-dataChan
 
-// 	return &pb.GetResponse{
-// 		Page:    req.GetPage(),
-// 		MaxPage: uint32(maxPages),
-// 		Data:    pbNfads,
-// 	}, nil
-// }
+	pbNfads := make([]*pb.NFAD, len(nfads))
+	for i, nfad := range nfads {
+		pbNfads[i] = &pb.NFAD{
+			Id:        nfad.ID,
+			PostCode:  nfad.PostCode,
+			Type:      pb.ControlType(nfad.Type.ToByte()),
+			DateStart: timestamppb.New(nfad.DateStart),
+			PrevId:    nfad.PrevID,
+			NextId:    nfad.NextID,
+			Value:     nfad.Value,
+		}
+	}
+
+	tx.Commit()
+
+	return &pb.GetResponse{
+		Page:    req.GetPage(),
+		MaxPage: uint32(maxPages),
+		Data:    pbNfads,
+	}, nil
+}
 
 func (*ServerContext) CheckValue(ctx context.Context, req *pb.CheckValueRequest) (*pb.CheckValueResponse, error) {
 	repo := new(repository.RepositoryContext)
