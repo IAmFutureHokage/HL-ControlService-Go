@@ -76,87 +76,32 @@ func (r *HydrologyStatsRepository) UpdateControlValues(ctx context.Context, valu
 	return tx.Commit(ctx)
 }
 
-// func (r HydrologyStatsRepository) GetById(tx *gorm.DB, id string) (*model.NFAD, error) {
-// 	var nfad model.NFAD
-// 	err := tx.First(&nfad, "id = ?", id).Error
+func (r *HydrologyStatsRepository) GetControlValues(ctx context.Context, postCode string, controlType model.ControlValueType, page, pageSize int) ([]model.ControlValue, int, error) {
 
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return &nfad, nil
-// }
+	var controlValues []model.ControlValue
+	var totalCount int
 
-// func (r HydrologyStatsRepository) GetActiveByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte) (*model.NFAD, error) {
-// 	var nfad model.NFAD
+	query := `SELECT id, post_code, type, date_start, value FROM control_values WHERE post_code = $1 AND type = $2 ORDER BY date_start DESC LIMIT $3 OFFSET $4`
+	rows, err := r.dbPool.Query(ctx, query, postCode, controlType, pageSize, (page-1)*pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
 
-// 	err := tx.Where("post_code = ? AND type = ? AND (next_id IS NULL OR next_id = '')", postCode, typeNfad).First(&nfad).Error
+	defer rows.Close()
 
-// 	if errors.Is(err, gorm.ErrRecordNotFound) {
-// 		return nil, nil
-// 	}
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return &nfad, nil
-// }
+	for rows.Next() {
+		var cv model.ControlValue
+		if err := rows.Scan(&cv.ID, &cv.PostCode, &cv.Type, &cv.DateStart, &cv.Value); err != nil {
+			return nil, 0, err
+		}
+		controlValues = append(controlValues, cv)
+	}
 
-// func (r HydrologyStatsRepository) GetByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte, pageNumber, pageSize int) (int, []*model.NFAD, error) {
+	countQuery := `SELECT COUNT(*) FROM control_values WHERE post_code = $1 AND type = $2`
+	err = r.dbPool.QueryRow(ctx, countQuery, postCode, controlType).Scan(&totalCount)
+	if err != nil {
+		return nil, 0, err
+	}
 
-// 	var nfads []*model.NFAD
-// 	var totalRecords int64
-
-// 	err := tx.Model(&model.NFAD{}).Where("post_code = ? AND type = ?", postCode, typeNfad).Count(&totalRecords).Error
-
-// 	if err != nil {
-// 		return 0, nil, err
-// 	}
-
-// 	maxPages := int((totalRecords + int64(pageSize) - 1) / int64(pageSize))
-// 	totalPages := maxPages
-
-// 	offset := (pageNumber - 1) * pageSize
-// 	err = tx.Where("post_code = ? AND type = ?", postCode, typeNfad).Offset(offset).Limit(pageSize).Find(&nfads).Error
-
-// 	if err != nil {
-// 		return 0, nil, err
-// 	}
-// 	return totalPages, nfads, nil
-// }
-
-// func (r HydrologyStatsRepository) GetByPostCodeAndDate(tx *gorm.DB, postCode int, date time.Time) ([]*model.NFAD, error) {
-// 	date = date.Truncate(24 * time.Hour)
-
-// 	var nfads []*model.NFAD
-
-// 	err := tx.Raw(`
-//         SELECT DISTINCT ON (type) *
-//         FROM nfads
-//         WHERE post_code = ? AND date_start <= ?
-//         ORDER BY type, date_start DESC
-//     `, postCode, date).Scan(&nfads).Error
-
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	if len(nfads) == 0 {
-// 		return nil, gorm.ErrRecordNotFound
-// 	}
-
-// 	return nfads, nil
-// }
-
-// func (r HydrologyStatsRepository) GetByDateRange(tx *gorm.DB, postCode int, startDate, endDate time.Time) ([]*model.NFAD, error) {
-
-// 	startDate = startDate.Truncate(24 * time.Hour)
-// 	endDate = endDate.Truncate(24 * time.Hour)
-
-// 	var nfads []*model.NFAD
-
-// 	err := tx.Where("post_code = ? AND date_start <= ? AND (next_id IS NULL OR next_id = '' OR next_id IN (SELECT id FROM nfads WHERE date_start >= ?))", postCode, endDate, startDate).Order("date_start desc").Find(&nfads).Error
-
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return nfads, nil
-// }
+	return controlValues, totalCount, nil
+}

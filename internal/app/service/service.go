@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/domain/model"
@@ -97,4 +98,39 @@ func (s *HydrologyStatsService) UpdateControlValue(ctx context.Context, req *pb.
 	}
 
 	return &pb.UpdateControlValueResponse{ControlValues: updatedControlValues}, nil
+}
+
+func (s *HydrologyStatsService) GetControlValues(ctx context.Context, req *pb.GetControlValuesRequest) (*pb.GetControlValuesResponse, error) {
+
+	pageSize := 50
+
+	page := int(req.GetPage())
+	if page < 1 {
+		page = 1
+	}
+
+	controlValues, totalCount, err := s.repo.GetControlValues(ctx, req.GetPostCode(), model.ControlValueType(req.GetType()), page, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	var pbControlValues []*pb.ControlValue
+
+	for _, cv := range controlValues {
+		pbControlValues = append(pbControlValues, &pb.ControlValue{
+			Id:        cv.ID,
+			PostCode:  cv.PostCode,
+			Type:      pb.ControlValueType(cv.Type),
+			DateStart: timestamppb.New(cv.DateStart),
+			Value:     cv.Value,
+		})
+	}
+
+	maxPage := uint32(math.Ceil(float64(totalCount) / float64(pageSize)))
+
+	return &pb.GetControlValuesResponse{
+		Page:          uint32(page),
+		MaxPage:       maxPage,
+		ControlValues: pbControlValues,
+	}, nil
 }
