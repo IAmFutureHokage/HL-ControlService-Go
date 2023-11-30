@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/IAmFutureHokage/HL-ControlService-Go/app/domain/model"
 	"github.com/IAmFutureHokage/HL-ControlService-Go/database"
+	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/domain/model"
 	"gorm.io/gorm"
 )
 
@@ -33,8 +33,6 @@ func (r HydrologyStatsRepository) Update(tx *gorm.DB, data model.NFAD) error {
 		"PostCode":  data.PostCode,
 		"Type":      data.Type,
 		"DateStart": data.DateStart,
-		"PrevID":    data.PrevID,
-		"NextID":    data.NextID,
 		"Value":     data.Value,
 	}
 

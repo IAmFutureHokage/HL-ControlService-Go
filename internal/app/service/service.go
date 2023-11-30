@@ -3,8 +3,8 @@ package service
 import (
 	"time"
 
-	"github.com/IAmFutureHokage/HL-ControlService-Go/app/domain/model"
-	pb "github.com/IAmFutureHokage/HL-ControlService-Go/proto"
+	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/domain/model"
+	pb "github.com/IAmFutureHokage/HL-ControlService-Go/internal/proto"
 	"gorm.io/gorm"
 )
 

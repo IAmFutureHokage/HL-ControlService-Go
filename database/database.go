@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/IAmFutureHokage/HL-ControlService-Go/app/domain/model"
+	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/domain/model"
 	"github.com/spf13/viper"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func OpenDB() (*gorm.DB, error) {
+
 	host := viper.GetString("database.host")
 	port := viper.GetString("database.port")
 	dbName := viper.GetString("database.dbname")
