@@ -44,7 +44,7 @@ func main() {
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterHydrologyControlServiceServer(s, &service.ServerContext{})
+	pb.RegisterHydrologyStatsServiceServer(s, &service.HydrologyStatsService{})
 
 	log.Printf("Server listening at %v", lis.Addr())
 

@@ -6,17 +6,25 @@ package hydrologycontrol;
 
 option go_package = "github.com/IAmFutureHokage/HL-ControlService-Go";
 
-message NFAD {
+service HydrologyStatsService {
+    rpc AddControlValue(AddControlValueRequest) returns (AddControlValueResponse);
+    rpc RemoveControlValue(RemoveControlValueRequest) returns (RemoveControlValueResponse);
+    rpc UpdateControlValue(UpdateControlValueRequest) returns (UpdateControlValueResponse);
+    rpc GetControlValues(GetControlValuesRequest) returns (GetControlValuesResponse);
+    rpc CheckWaterLevel(CheckWaterLevelRequest) returns (CheckWaterLevelResponse);
+    rpc GetStatByDay(GetStatByDayRequest) returns (GetStatByDayResponse);
+    rpc GetStats(GetStatsRequest) returns (GetStatsResponse);
+}
+
+message ControlValue {
     string id = 1;
-    uint32 post_code = 2;
-    ControlType type = 3;
+    string post_code = 2;
+    ControlValueType type = 3;
     google.protobuf.Timestamp date_start = 4;
-    string prev_id = 5;
-    string next_id = 6;
     uint32 value = 7;
 }
 
-message AllNFAD {
+message StatByDay {
     google.protobuf.Timestamp date = 1;
     uint32 norm = 2;
     uint32 floodplain = 3;
@@ -24,7 +32,7 @@ message AllNFAD {
     uint32 dangerous = 5;
 }
 
-enum ControlType {
+enum ControlValueType {
     NONE = 0;
     NORM = 1;
     FLOODPLAIN = 2;
@@ -32,77 +40,67 @@ enum ControlType {
     DANGEROUS = 4;
 }
 
-message CreateRequest {
-    uint32 post_code = 1;
-    ControlType type = 2;
+message AddControlValueRequest {
+    string post_code = 1;
+    ControlValueType type = 2;
     google.protobuf.Timestamp date_start = 3;
     uint32 value = 4;
 }
 
-message CreateResponse {
-    NFAD nfad = 1;
+message AddControlValueResponse {
+    ControlValue control_value = 1;
 }
 
-message DeleteRequest {
+message RemoveControlValueRequest {
     string id = 1;
 }
 
-message DeleteResponse {
+message RemoveControlValueResponse {
     bool success = 1;
 }
 
-message UpdateRequest {
-    repeated NFAD data = 1; 
+message UpdateControlValueRequest {
+    repeated ControlValue control_values = 1; 
 }
 
-message UpdateResponse {
-    repeated NFAD data = 1; 
+message UpdateControlValueResponse {
+    repeated ControlValue control_values = 1; 
 }
 
-message GetRequest {
-    uint32 post_code = 1;
-    ControlType type = 2;
+message GetControlValuesRequest {
+    string post_code = 1;
+    ControlValueType type = 2;
     uint32 page = 3; 
 }
-message GetResponse {
+message GetControlValuesResponse {
     uint32 page = 1;
     uint32 max_page = 2;
-    repeated NFAD data = 3;
+    repeated ControlValue control_values = 3;
 }
 
-message CheckValueRequest {
+message CheckWaterLevelRequest {
     google.protobuf.Timestamp date = 1;
-    uint32 post_code = 2;
+    string post_code = 2;
     uint32 value = 3;
 }
-message CheckValueResponse {
+message CheckWaterLevelResponse {
     uint32 excess = 1;
 }
 
-message GetDateRequest {
-    uint32 post_code = 1;
+message GetStatByDayRequest {
+    string post_code = 1;
     google.protobuf.Timestamp date = 2;
 }
-message GetDateResponse {
-    AllNFAD data = 1;
+message GetStatByDayResponse {
+    StatByDay stat = 1;
 }
 
-message GetIntervalRequest {
-    uint32 post_code = 1;
+message GetStatsRequest {
+    string post_code = 1;
     google.protobuf.Timestamp start_date = 2;
     google.protobuf.Timestamp end_date = 3;
 }
 
-message GetIntervalResponse {
-    repeated AllNFAD data = 1;
-}
-
-service HydrologyControlService {
-    rpc Create(CreateRequest) returns (CreateResponse);
-    rpc Delete(DeleteRequest) returns (DeleteResponse);
-    rpc Update(UpdateRequest) returns (UpdateResponse);
-    rpc Get(GetRequest) returns (GetResponse);
-    rpc CheckValue(CheckValueRequest) returns (CheckValueResponse);
-    rpc GetDate(GetDateRequest) returns (GetDateResponse);
-    rpc GetInterval(GetIntervalRequest) returns (GetIntervalResponse);
+message GetStatsResponse {
+    repeated StatByDay stats = 1;
 }

@@ -9,10 +9,10 @@ import (
 	"gorm.io/gorm"
 )
 
-type RepositoryContext struct {
+type HydrologyStatsRepository struct {
 }
 
-func (r RepositoryContext) BeginTransaction() (*gorm.DB, error) {
+func (r HydrologyStatsRepository) BeginTransaction() (*gorm.DB, error) {
 	db, err := database.OpenDB()
 	if err != nil {
 		return nil, err
@@ -20,15 +20,15 @@ func (r RepositoryContext) BeginTransaction() (*gorm.DB, error) {
 	return db.Begin(), nil
 }
 
-func (r RepositoryContext) Create(tx *gorm.DB, data model.NFAD) error {
+func (r HydrologyStatsRepository) Create(tx *gorm.DB, data model.NFAD) error {
 	return tx.Create(&data).Error
 }
 
-func (r RepositoryContext) Delete(tx *gorm.DB, id string) error {
+func (r HydrologyStatsRepository) Delete(tx *gorm.DB, id string) error {
 	return tx.Where("id = ?", id).Delete(&model.NFAD{}).Error
 }
 
-func (r RepositoryContext) Update(tx *gorm.DB, data model.NFAD) error {
+func (r HydrologyStatsRepository) Update(tx *gorm.DB, data model.NFAD) error {
 	updateData := map[string]interface{}{
 		"PostCode":  data.PostCode,
 		"Type":      data.Type,
@@ -41,7 +41,7 @@ func (r RepositoryContext) Update(tx *gorm.DB, data model.NFAD) error {
 	return tx.Model(&model.NFAD{}).Where("id = ?", data.ID).Updates(updateData).Error
 }
 
-func (r RepositoryContext) GetById(tx *gorm.DB, id string) (*model.NFAD, error) {
+func (r HydrologyStatsRepository) GetById(tx *gorm.DB, id string) (*model.NFAD, error) {
 	var nfad model.NFAD
 	err := tx.First(&nfad, "id = ?", id).Error
 
@@ -51,7 +51,7 @@ func (r RepositoryContext) GetById(tx *gorm.DB, id string) (*model.NFAD, error) 
 	return &nfad, nil
 }
 
-func (r RepositoryContext) GetActiveByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte) (*model.NFAD, error) {
+func (r HydrologyStatsRepository) GetActiveByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte) (*model.NFAD, error) {
 	var nfad model.NFAD
 
 	err := tx.Where("post_code = ? AND type = ? AND (next_id IS NULL OR next_id = '')", postCode, typeNfad).First(&nfad).Error
@@ -65,7 +65,7 @@ func (r RepositoryContext) GetActiveByPostCodeAndType(tx *gorm.DB, postCode int,
 	return &nfad, nil
 }
 
-func (r RepositoryContext) GetByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte, pageNumber, pageSize int) (int, []*model.NFAD, error) {
+func (r HydrologyStatsRepository) GetByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte, pageNumber, pageSize int) (int, []*model.NFAD, error) {
 
 	var nfads []*model.NFAD
 	var totalRecords int64
@@ -88,7 +88,7 @@ func (r RepositoryContext) GetByPostCodeAndType(tx *gorm.DB, postCode int, typeN
 	return totalPages, nfads, nil
 }
 
-func (r RepositoryContext) GetByPostCodeAndDate(tx *gorm.DB, postCode int, date time.Time) ([]*model.NFAD, error) {
+func (r HydrologyStatsRepository) GetByPostCodeAndDate(tx *gorm.DB, postCode int, date time.Time) ([]*model.NFAD, error) {
 	date = date.Truncate(24 * time.Hour)
 
 	var nfads []*model.NFAD
@@ -111,7 +111,7 @@ func (r RepositoryContext) GetByPostCodeAndDate(tx *gorm.DB, postCode int, date 
 	return nfads, nil
 }
 
-func (r RepositoryContext) GetByDateRange(tx *gorm.DB, postCode int, startDate, endDate time.Time) ([]*model.NFAD, error) {
+func (r HydrologyStatsRepository) GetByDateRange(tx *gorm.DB, postCode int, startDate, endDate time.Time) ([]*model.NFAD, error) {
 
 	startDate = startDate.Truncate(24 * time.Hour)
 	endDate = endDate.Truncate(24 * time.Hour)

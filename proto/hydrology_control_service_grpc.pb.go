@@ -19,312 +19,311 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	HydrologyControlService_Create_FullMethodName      = "/hydrologycontrol.HydrologyControlService/Create"
-	HydrologyControlService_Delete_FullMethodName      = "/hydrologycontrol.HydrologyControlService/Delete"
-	HydrologyControlService_Update_FullMethodName      = "/hydrologycontrol.HydrologyControlService/Update"
-	HydrologyControlService_Get_FullMethodName         = "/hydrologycontrol.HydrologyControlService/Get"
-	HydrologyControlService_CheckValue_FullMethodName  = "/hydrologycontrol.HydrologyControlService/CheckValue"
-	HydrologyControlService_GetDate_FullMethodName     = "/hydrologycontrol.HydrologyControlService/GetDate"
-	HydrologyControlService_GetInterval_FullMethodName = "/hydrologycontrol.HydrologyControlService/GetInterval"
+	HydrologyStatsService_AddControlValue_FullMethodName    = "/hydrologycontrol.HydrologyStatsService/AddControlValue"
+	HydrologyStatsService_RemoveControlValue_FullMethodName = "/hydrologycontrol.HydrologyStatsService/RemoveControlValue"
+	HydrologyStatsService_UpdateControlValue_FullMethodName = "/hydrologycontrol.HydrologyStatsService/UpdateControlValue"
+	HydrologyStatsService_GetControlValues_FullMethodName   = "/hydrologycontrol.HydrologyStatsService/GetControlValues"
+	HydrologyStatsService_CheckWaterLevel_FullMethodName    = "/hydrologycontrol.HydrologyStatsService/CheckWaterLevel"
+	HydrologyStatsService_GetStatByDay_FullMethodName       = "/hydrologycontrol.HydrologyStatsService/GetStatByDay"
+	HydrologyStatsService_GetStats_FullMethodName           = "/hydrologycontrol.HydrologyStatsService/GetStats"
 )
 
-// HydrologyControlServiceClient is the client API for HydrologyControlService service.
+// HydrologyStatsServiceClient is the client API for HydrologyStatsService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type HydrologyControlServiceClient interface {
-	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*CreateResponse, error)
-	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
-	Update(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
-	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error)
-	CheckValue(ctx context.Context, in *CheckValueRequest, opts ...grpc.CallOption) (*CheckValueResponse, error)
-	GetDate(ctx context.Context, in *GetDateRequest, opts ...grpc.CallOption) (*GetDateResponse, error)
-	GetInterval(ctx context.Context, in *GetIntervalRequest, opts ...grpc.CallOption) (*GetIntervalResponse, error)
+type HydrologyStatsServiceClient interface {
+	AddControlValue(ctx context.Context, in *AddControlValueRequest, opts ...grpc.CallOption) (*AddControlValueResponse, error)
+	RemoveControlValue(ctx context.Context, in *RemoveControlValueRequest, opts ...grpc.CallOption) (*RemoveControlValueResponse, error)
+	UpdateControlValue(ctx context.Context, in *UpdateControlValueRequest, opts ...grpc.CallOption) (*UpdateControlValueResponse, error)
+	GetControlValues(ctx context.Context, in *GetControlValuesRequest, opts ...grpc.CallOption) (*GetControlValuesResponse, error)
+	CheckWaterLevel(ctx context.Context, in *CheckWaterLevelRequest, opts ...grpc.CallOption) (*CheckWaterLevelResponse, error)
+	GetStatByDay(ctx context.Context, in *GetStatByDayRequest, opts ...grpc.CallOption) (*GetStatByDayResponse, error)
+	GetStats(ctx context.Context, in *GetStatsRequest, opts ...grpc.CallOption) (*GetStatsResponse, error)
 }
 
-type hydrologyControlServiceClient struct {
+type hydrologyStatsServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewHydrologyControlServiceClient(cc grpc.ClientConnInterface) HydrologyControlServiceClient {
-	return &hydrologyControlServiceClient{cc}
+func NewHydrologyStatsServiceClient(cc grpc.ClientConnInterface) HydrologyStatsServiceClient {
+	return &hydrologyStatsServiceClient{cc}
 }
 
-func (c *hydrologyControlServiceClient) Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*CreateResponse, error) {
-	out := new(CreateResponse)
-	err := c.cc.Invoke(ctx, HydrologyControlService_Create_FullMethodName, in, out, opts...)
+func (c *hydrologyStatsServiceClient) AddControlValue(ctx context.Context, in *AddControlValueRequest, opts ...grpc.CallOption) (*AddControlValueResponse, error) {
+	out := new(AddControlValueResponse)
+	err := c.cc.Invoke(ctx, HydrologyStatsService_AddControlValue_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *hydrologyControlServiceClient) Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error) {
-	out := new(DeleteResponse)
-	err := c.cc.Invoke(ctx, HydrologyControlService_Delete_FullMethodName, in, out, opts...)
+func (c *hydrologyStatsServiceClient) RemoveControlValue(ctx context.Context, in *RemoveControlValueRequest, opts ...grpc.CallOption) (*RemoveControlValueResponse, error) {
+	out := new(RemoveControlValueResponse)
+	err := c.cc.Invoke(ctx, HydrologyStatsService_RemoveControlValue_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *hydrologyControlServiceClient) Update(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*UpdateResponse, error) {
-	out := new(UpdateResponse)
-	err := c.cc.Invoke(ctx, HydrologyControlService_Update_FullMethodName, in, out, opts...)
+func (c *hydrologyStatsServiceClient) UpdateControlValue(ctx context.Context, in *UpdateControlValueRequest, opts ...grpc.CallOption) (*UpdateControlValueResponse, error) {
+	out := new(UpdateControlValueResponse)
+	err := c.cc.Invoke(ctx, HydrologyStatsService_UpdateControlValue_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *hydrologyControlServiceClient) Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error) {
-	out := new(GetResponse)
-	err := c.cc.Invoke(ctx, HydrologyControlService_Get_FullMethodName, in, out, opts...)
+func (c *hydrologyStatsServiceClient) GetControlValues(ctx context.Context, in *GetControlValuesRequest, opts ...grpc.CallOption) (*GetControlValuesResponse, error) {
+	out := new(GetControlValuesResponse)
+	err := c.cc.Invoke(ctx, HydrologyStatsService_GetControlValues_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *hydrologyControlServiceClient) CheckValue(ctx context.Context, in *CheckValueRequest, opts ...grpc.CallOption) (*CheckValueResponse, error) {
-	out := new(CheckValueResponse)
-	err := c.cc.Invoke(ctx, HydrologyControlService_CheckValue_FullMethodName, in, out, opts...)
+func (c *hydrologyStatsServiceClient) CheckWaterLevel(ctx context.Context, in *CheckWaterLevelRequest, opts ...grpc.CallOption) (*CheckWaterLevelResponse, error) {
+	out := new(CheckWaterLevelResponse)
+	err := c.cc.Invoke(ctx, HydrologyStatsService_CheckWaterLevel_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *hydrologyControlServiceClient) GetDate(ctx context.Context, in *GetDateRequest, opts ...grpc.CallOption) (*GetDateResponse, error) {
-	out := new(GetDateResponse)
-	err := c.cc.Invoke(ctx, HydrologyControlService_GetDate_FullMethodName, in, out, opts...)
+func (c *hydrologyStatsServiceClient) GetStatByDay(ctx context.Context, in *GetStatByDayRequest, opts ...grpc.CallOption) (*GetStatByDayResponse, error) {
+	out := new(GetStatByDayResponse)
+	err := c.cc.Invoke(ctx, HydrologyStatsService_GetStatByDay_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *hydrologyControlServiceClient) GetInterval(ctx context.Context, in *GetIntervalRequest, opts ...grpc.CallOption) (*GetIntervalResponse, error) {
-	out := new(GetIntervalResponse)
-	err := c.cc.Invoke(ctx, HydrologyControlService_GetInterval_FullMethodName, in, out, opts...)
+func (c *hydrologyStatsServiceClient) GetStats(ctx context.Context, in *GetStatsRequest, opts ...grpc.CallOption) (*GetStatsResponse, error) {
+	out := new(GetStatsResponse)
+	err := c.cc.Invoke(ctx, HydrologyStatsService_GetStats_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// HydrologyControlServiceServer is the server API for HydrologyControlService service.
-// All implementations must embed UnimplementedHydrologyControlServiceServer
+// HydrologyStatsServiceServer is the server API for HydrologyStatsService service.
+// All implementations must embed UnimplementedHydrologyStatsServiceServer
 // for forward compatibility
-type HydrologyControlServiceServer interface {
-	Create(context.Context, *CreateRequest) (*CreateResponse, error)
-	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
-	Update(context.Context, *UpdateRequest) (*UpdateResponse, error)
-	Get(context.Context, *GetRequest) (*GetResponse, error)
-	CheckValue(context.Context, *CheckValueRequest) (*CheckValueResponse, error)
-	GetDate(context.Context, *GetDateRequest) (*GetDateResponse, error)
-	GetInterval(context.Context, *GetIntervalRequest) (*GetIntervalResponse, error)
-	mustEmbedUnimplementedHydrologyControlServiceServer()
+type HydrologyStatsServiceServer interface {
+	AddControlValue(context.Context, *AddControlValueRequest) (*AddControlValueResponse, error)
+	RemoveControlValue(context.Context, *RemoveControlValueRequest) (*RemoveControlValueResponse, error)
+	UpdateControlValue(context.Context, *UpdateControlValueRequest) (*UpdateControlValueResponse, error)
+	GetControlValues(context.Context, *GetControlValuesRequest) (*GetControlValuesResponse, error)
+	CheckWaterLevel(context.Context, *CheckWaterLevelRequest) (*CheckWaterLevelResponse, error)
+	GetStatByDay(context.Context, *GetStatByDayRequest) (*GetStatByDayResponse, error)
+	GetStats(context.Context, *GetStatsRequest) (*GetStatsResponse, error)
+	mustEmbedUnimplementedHydrologyStatsServiceServer()
 }
 
-// UnimplementedHydrologyControlServiceServer must be embedded to have forward compatible implementations.
-type UnimplementedHydrologyControlServiceServer struct {
+// UnimplementedHydrologyStatsServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedHydrologyStatsServiceServer struct {
 }
 
-func (UnimplementedHydrologyControlServiceServer) Create(context.Context, *CreateRequest) (*CreateResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
+func (UnimplementedHydrologyStatsServiceServer) AddControlValue(context.Context, *AddControlValueRequest) (*AddControlValueResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddControlValue not implemented")
 }
-func (UnimplementedHydrologyControlServiceServer) Delete(context.Context, *DeleteRequest) (*DeleteResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+func (UnimplementedHydrologyStatsServiceServer) RemoveControlValue(context.Context, *RemoveControlValueRequest) (*RemoveControlValueResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveControlValue not implemented")
 }
-func (UnimplementedHydrologyControlServiceServer) Update(context.Context, *UpdateRequest) (*UpdateResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
+func (UnimplementedHydrologyStatsServiceServer) UpdateControlValue(context.Context, *UpdateControlValueRequest) (*UpdateControlValueResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateControlValue not implemented")
 }
-func (UnimplementedHydrologyControlServiceServer) Get(context.Context, *GetRequest) (*GetResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
+func (UnimplementedHydrologyStatsServiceServer) GetControlValues(context.Context, *GetControlValuesRequest) (*GetControlValuesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetControlValues not implemented")
 }
-func (UnimplementedHydrologyControlServiceServer) CheckValue(context.Context, *CheckValueRequest) (*CheckValueResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CheckValue not implemented")
+func (UnimplementedHydrologyStatsServiceServer) CheckWaterLevel(context.Context, *CheckWaterLevelRequest) (*CheckWaterLevelResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckWaterLevel not implemented")
 }
-func (UnimplementedHydrologyControlServiceServer) GetDate(context.Context, *GetDateRequest) (*GetDateResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetDate not implemented")
+func (UnimplementedHydrologyStatsServiceServer) GetStatByDay(context.Context, *GetStatByDayRequest) (*GetStatByDayResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetStatByDay not implemented")
 }
-func (UnimplementedHydrologyControlServiceServer) GetInterval(context.Context, *GetIntervalRequest) (*GetIntervalResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetInterval not implemented")
+func (UnimplementedHydrologyStatsServiceServer) GetStats(context.Context, *GetStatsRequest) (*GetStatsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetStats not implemented")
 }
-func (UnimplementedHydrologyControlServiceServer) mustEmbedUnimplementedHydrologyControlServiceServer() {
-}
+func (UnimplementedHydrologyStatsServiceServer) mustEmbedUnimplementedHydrologyStatsServiceServer() {}
 
-// UnsafeHydrologyControlServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to HydrologyControlServiceServer will
+// UnsafeHydrologyStatsServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to HydrologyStatsServiceServer will
 // result in compilation errors.
-type UnsafeHydrologyControlServiceServer interface {
-	mustEmbedUnimplementedHydrologyControlServiceServer()
+type UnsafeHydrologyStatsServiceServer interface {
+	mustEmbedUnimplementedHydrologyStatsServiceServer()
 }
 
-func RegisterHydrologyControlServiceServer(s grpc.ServiceRegistrar, srv HydrologyControlServiceServer) {
-	s.RegisterService(&HydrologyControlService_ServiceDesc, srv)
+func RegisterHydrologyStatsServiceServer(s grpc.ServiceRegistrar, srv HydrologyStatsServiceServer) {
+	s.RegisterService(&HydrologyStatsService_ServiceDesc, srv)
 }
 
-func _HydrologyControlService_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateRequest)
+func _HydrologyStatsService_AddControlValue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddControlValueRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HydrologyControlServiceServer).Create(ctx, in)
+		return srv.(HydrologyStatsServiceServer).AddControlValue(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: HydrologyControlService_Create_FullMethodName,
+		FullMethod: HydrologyStatsService_AddControlValue_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HydrologyControlServiceServer).Create(ctx, req.(*CreateRequest))
+		return srv.(HydrologyStatsServiceServer).AddControlValue(ctx, req.(*AddControlValueRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _HydrologyControlService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteRequest)
+func _HydrologyStatsService_RemoveControlValue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveControlValueRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HydrologyControlServiceServer).Delete(ctx, in)
+		return srv.(HydrologyStatsServiceServer).RemoveControlValue(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: HydrologyControlService_Delete_FullMethodName,
+		FullMethod: HydrologyStatsService_RemoveControlValue_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HydrologyControlServiceServer).Delete(ctx, req.(*DeleteRequest))
+		return srv.(HydrologyStatsServiceServer).RemoveControlValue(ctx, req.(*RemoveControlValueRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _HydrologyControlService_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateRequest)
+func _HydrologyStatsService_UpdateControlValue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateControlValueRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HydrologyControlServiceServer).Update(ctx, in)
+		return srv.(HydrologyStatsServiceServer).UpdateControlValue(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: HydrologyControlService_Update_FullMethodName,
+		FullMethod: HydrologyStatsService_UpdateControlValue_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HydrologyControlServiceServer).Update(ctx, req.(*UpdateRequest))
+		return srv.(HydrologyStatsServiceServer).UpdateControlValue(ctx, req.(*UpdateControlValueRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _HydrologyControlService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetRequest)
+func _HydrologyStatsService_GetControlValues_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetControlValuesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HydrologyControlServiceServer).Get(ctx, in)
+		return srv.(HydrologyStatsServiceServer).GetControlValues(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: HydrologyControlService_Get_FullMethodName,
+		FullMethod: HydrologyStatsService_GetControlValues_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HydrologyControlServiceServer).Get(ctx, req.(*GetRequest))
+		return srv.(HydrologyStatsServiceServer).GetControlValues(ctx, req.(*GetControlValuesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _HydrologyControlService_CheckValue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CheckValueRequest)
+func _HydrologyStatsService_CheckWaterLevel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckWaterLevelRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HydrologyControlServiceServer).CheckValue(ctx, in)
+		return srv.(HydrologyStatsServiceServer).CheckWaterLevel(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: HydrologyControlService_CheckValue_FullMethodName,
+		FullMethod: HydrologyStatsService_CheckWaterLevel_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HydrologyControlServiceServer).CheckValue(ctx, req.(*CheckValueRequest))
+		return srv.(HydrologyStatsServiceServer).CheckWaterLevel(ctx, req.(*CheckWaterLevelRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _HydrologyControlService_GetDate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetDateRequest)
+func _HydrologyStatsService_GetStatByDay_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetStatByDayRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HydrologyControlServiceServer).GetDate(ctx, in)
+		return srv.(HydrologyStatsServiceServer).GetStatByDay(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: HydrologyControlService_GetDate_FullMethodName,
+		FullMethod: HydrologyStatsService_GetStatByDay_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HydrologyControlServiceServer).GetDate(ctx, req.(*GetDateRequest))
+		return srv.(HydrologyStatsServiceServer).GetStatByDay(ctx, req.(*GetStatByDayRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _HydrologyControlService_GetInterval_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetIntervalRequest)
+func _HydrologyStatsService_GetStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetStatsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HydrologyControlServiceServer).GetInterval(ctx, in)
+		return srv.(HydrologyStatsServiceServer).GetStats(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: HydrologyControlService_GetInterval_FullMethodName,
+		FullMethod: HydrologyStatsService_GetStats_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HydrologyControlServiceServer).GetInterval(ctx, req.(*GetIntervalRequest))
+		return srv.(HydrologyStatsServiceServer).GetStats(ctx, req.(*GetStatsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// HydrologyControlService_ServiceDesc is the grpc.ServiceDesc for HydrologyControlService service.
+// HydrologyStatsService_ServiceDesc is the grpc.ServiceDesc for HydrologyStatsService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var HydrologyControlService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "hydrologycontrol.HydrologyControlService",
-	HandlerType: (*HydrologyControlServiceServer)(nil),
+var HydrologyStatsService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "hydrologycontrol.HydrologyStatsService",
+	HandlerType: (*HydrologyStatsServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Create",
-			Handler:    _HydrologyControlService_Create_Handler,
+			MethodName: "AddControlValue",
+			Handler:    _HydrologyStatsService_AddControlValue_Handler,
 		},
 		{
-			MethodName: "Delete",
-			Handler:    _HydrologyControlService_Delete_Handler,
+			MethodName: "RemoveControlValue",
+			Handler:    _HydrologyStatsService_RemoveControlValue_Handler,
 		},
 		{
-			MethodName: "Update",
-			Handler:    _HydrologyControlService_Update_Handler,
+			MethodName: "UpdateControlValue",
+			Handler:    _HydrologyStatsService_UpdateControlValue_Handler,
 		},
 		{
-			MethodName: "Get",
-			Handler:    _HydrologyControlService_Get_Handler,
+			MethodName: "GetControlValues",
+			Handler:    _HydrologyStatsService_GetControlValues_Handler,
 		},
 		{
-			MethodName: "CheckValue",
-			Handler:    _HydrologyControlService_CheckValue_Handler,
+			MethodName: "CheckWaterLevel",
+			Handler:    _HydrologyStatsService_CheckWaterLevel_Handler,
 		},
 		{
-			MethodName: "GetDate",
-			Handler:    _HydrologyControlService_GetDate_Handler,
+			MethodName: "GetStatByDay",
+			Handler:    _HydrologyStatsService_GetStatByDay_Handler,
 		},
 		{
-			MethodName: "GetInterval",
-			Handler:    _HydrologyControlService_GetInterval_Handler,
+			MethodName: "GetStats",
+			Handler:    _HydrologyStatsService_GetStats_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
