@@ -1,15 +1,14 @@
 package service
 
 import (
-	// "context"
-	// "errors"
+	"context"
+	"errors"
 
-	// "time"
+	"time"
 
-	// "github.com/IAmFutureHokage/HL-ControlService-Go/app/domain/model"
-	// "github.com/IAmFutureHokage/HL-ControlService-Go/app/repository"
+	"github.com/IAmFutureHokage/HL-ControlService-Go/app/domain/model"
+	"github.com/IAmFutureHokage/HL-ControlService-Go/app/repository"
 	pb "github.com/IAmFutureHokage/HL-ControlService-Go/proto"
-	// "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type ServerContext struct {
@@ -72,3 +71,52 @@ type ServerContext struct {
 // 		Data: req.Data,
 // 	}, nil
 // }
+
+func (*ServerContext) Update(ctx context.Context, req *pb.UpdateRequest) (*pb.UpdateResponse, error) {
+	repo := new(repository.RepositoryContext)
+
+	tx, err := repo.BeginTransaction()
+	if err != nil {
+		return nil, err
+	}
+	if len(req.Data) < 1 {
+		return nil, errors.New("no data provided")
+	}
+
+	if len(req.Data) != 1 {
+
+		for i := 0; i < len(req.Data)-1; i++ {
+			current := req.Data[i]
+			next := req.Data[i+1]
+
+			if current.Id != next.PrevId ||
+				!next.DateStart.AsTime().Truncate(24*time.Hour).After(current.DateStart.AsTime().Truncate(24*time.Hour)) {
+				return nil, errors.New("bad data")
+			}
+
+			if current.Value == 0 {
+				return nil, errors.New("empty update")
+			}
+		}
+	}
+
+	for _, pbNFAD := range req.Data {
+		nfad := model.NFAD{
+			ID:        pbNFAD.Id,
+			Value:     pbNFAD.Value,
+			DateStart: pbNFAD.DateStart.AsTime().Truncate(24 * time.Hour),
+		}
+
+		err := repo.NewUpdate(tx, nfad.ID, nfad.Value, nfad.DateStart)
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+	}
+
+	tx.Commit()
+
+	return &pb.UpdateResponse{
+		Data: req.Data,
+	}, nil
+}

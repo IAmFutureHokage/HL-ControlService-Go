@@ -41,6 +41,15 @@ func (r RepositoryContext) Update(tx *gorm.DB, data model.NFAD) error {
 	return tx.Model(&model.NFAD{}).Where("id = ?", data.ID).Updates(updateData).Error
 }
 
+func (r RepositoryContext) NewUpdate(tx *gorm.DB, id string, value uint32, dateStart time.Time) error {
+	updateData := map[string]interface{}{
+		"Value":     value,
+		"DateStart": dateStart,
+	}
+
+	return tx.Model(&model.NFAD{}).Where("id = ?", id).Updates(updateData).Error
+}
+
 func (r RepositoryContext) GetById(tx *gorm.DB, id string) (*model.NFAD, error) {
 	var nfad model.NFAD
 	err := tx.First(&nfad, "id = ?", id).Error
