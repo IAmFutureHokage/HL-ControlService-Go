@@ -1,6 +1,37 @@
 package repository
 
+import (
+	"context"
+	"fmt"
+
+	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/domain/model"
+	"github.com/jackc/pgx/v4/pgxpool"
+)
+
 type HydrologyStatsRepository struct {
+	dbPool *pgxpool.Pool
+}
+
+func NewHydrologyStatsRepository(pool *pgxpool.Pool) *HydrologyStatsRepository {
+	return &HydrologyStatsRepository{dbPool: pool}
+}
+
+func (r *HydrologyStatsRepository) AddControlValue(ctx context.Context, value model.ControlValue) error {
+
+	sql := `INSERT INTO control_values (id, post_code, type, date_start, value)
+            VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (post_code, type, date_start) DO NOTHING;`
+
+	commandTag, err := r.dbPool.Exec(ctx, sql, value.ID, value.PostCode, value.Type, value.DateStart, value.Value)
+	if err != nil {
+		return err
+	}
+
+	if commandTag.RowsAffected() == 0 {
+		return fmt.Errorf("control value already exists")
+	}
+
+	return nil
 }
 
 // func (r HydrologyStatsRepository) Create(tx *gorm.DB, data model.NFAD) error {

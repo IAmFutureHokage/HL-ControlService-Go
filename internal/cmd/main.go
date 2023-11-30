@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/migrations"
+	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/repository"
 	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/service"
 	pb "github.com/IAmFutureHokage/HL-ControlService-Go/internal/proto"
 	"github.com/IAmFutureHokage/HL-ControlService-Go/pkg/database"
@@ -66,8 +67,11 @@ func main() {
 		log.Fatalf("Failed to execute migration: %v", err)
 	}
 
+	repo := repository.NewHydrologyStatsRepository(dbPool)
+	hydrologyStatsService := service.NewHydrologyStatsService(repo)
+
 	s := grpc.NewServer()
-	pb.RegisterHydrologyStatsServiceServer(s, &service.HydrologyStatsService{})
+	pb.RegisterHydrologyStatsServiceServer(s, hydrologyStatsService)
 
 	log.Printf("Server listening at %v", lis.Addr())
 
