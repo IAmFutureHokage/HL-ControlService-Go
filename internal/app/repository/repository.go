@@ -34,13 +34,21 @@ func (r *HydrologyStatsRepository) AddControlValue(ctx context.Context, value mo
 	return nil
 }
 
-// func (r HydrologyStatsRepository) Create(tx *gorm.DB, data model.NFAD) error {
-// 	return tx.Create(&data).Error
-// }
+func (r *HydrologyStatsRepository) RemoveControlValue(ctx context.Context, id string) error {
 
-// func (r HydrologyStatsRepository) Delete(tx *gorm.DB, id string) error {
-// 	return tx.Where("id = ?", id).Delete(&model.NFAD{}).Error
-// }
+	sql := `DELETE FROM control_values WHERE id = $1;`
+
+	commandTag, err := r.dbPool.Exec(ctx, sql, id)
+	if err != nil {
+		return err
+	}
+
+	if commandTag.RowsAffected() == 0 {
+		return fmt.Errorf("no control value found with id: %s", id)
+	}
+
+	return nil
+}
 
 // func (r HydrologyStatsRepository) Update(tx *gorm.DB, data model.NFAD) error {
 // 	updateData := map[string]interface{}{

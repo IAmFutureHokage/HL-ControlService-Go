@@ -8,6 +8,17 @@ CREATE TABLE IF NOT EXISTS control_values (
     date_start TIMESTAMP NOT NULL,
     value INTEGER NOT NULL
 );
-ALTER TABLE control_values
-ADD CONSTRAINT control_values_unique_constraint UNIQUE (post_code, type, date_start);
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'control_values_unique_constraint'
+    ) THEN
+        ALTER TABLE control_values
+        ADD CONSTRAINT control_values_unique_constraint UNIQUE (post_code, type, date_start);
+    END IF;
+END
+$$;
 `
