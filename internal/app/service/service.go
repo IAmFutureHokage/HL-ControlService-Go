@@ -5,22 +5,19 @@ import (
 	"math"
 	"time"
 
-	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/domain/model"
+	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/model"
 	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/repository"
 	pb "github.com/IAmFutureHokage/HL-ControlService-Go/internal/proto"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type Repository interface {
+type HydrologyStatsRepository interface {
 	AddControlValue(ctx context.Context, value model.ControlValue) error
 	RemoveControlValue(ctx context.Context, id string) error
 	UpdateControlValue(ctx context.Context, values []model.ControlValue) error
-	// GetById(tx *gorm.DB, id string) (*model.NFAD, error)
-	// GetByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte, pageNumber, pageSize int) (int, []*model.NFAD, error)
-	// GetActiveByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte) (*model.NFAD, error)
-	// GetByPostCodeAndDate(tx *gorm.DB, postCode int, date time.Time) ([]*model.NFAD, error)
-	// GetByDateRange(tx *gorm.DB, postCode int, startDate, endDate time.Time) ([]*model.NFAD, error)
+	GetControlValues(ctx context.Context, postCode string, controlType model.ControlValueType, page, pageSize int) ([]model.ControlValue, int, error)
+	GetControlValuesByDay(ctx context.Context, postCode string, date time.Time) ([]model.ControlValue, error)
 }
 
 type HydrologyStatsService struct {
@@ -132,5 +129,28 @@ func (s *HydrologyStatsService) GetControlValues(ctx context.Context, req *pb.Ge
 		Page:          uint32(page),
 		MaxPage:       maxPage,
 		ControlValues: pbControlValues,
+	}, nil
+}
+
+func (s *HydrologyStatsService) CheckWaterLevel(ctx context.Context, req *pb.CheckWaterLevelRequest) (*pb.CheckWaterLevelResponse, error) {
+
+	date := req.GetDate().AsTime().Truncate(24 * time.Hour)
+
+	controlValues, err := s.repo.GetControlValuesByDay(ctx, req.GetPostCode(), date)
+	if err != nil {
+		return nil, err
+	}
+
+	var excessType uint32
+
+	for _, cv := range controlValues {
+		if cv.Value < req.GetValue() {
+			excessType = uint32(cv.Type)
+			break
+		}
+	}
+
+	return &pb.CheckWaterLevelResponse{
+		Excess: excessType,
 	}, nil
 }

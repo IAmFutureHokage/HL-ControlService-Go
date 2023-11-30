@@ -3,8 +3,9 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
-	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/domain/model"
+	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/model"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -104,4 +105,40 @@ func (r *HydrologyStatsRepository) GetControlValues(ctx context.Context, postCod
 	}
 
 	return controlValues, totalCount, nil
+}
+
+func (r *HydrologyStatsRepository) GetControlValuesByDay(ctx context.Context, postCode string, date time.Time) ([]model.ControlValue, error) {
+
+	var controlValues []model.ControlValue
+
+	query := `
+	SELECT id, post_code, type, date_start, value
+	FROM (
+    SELECT DISTINCT ON (type) id, post_code, type, date_start, value
+    FROM control_values
+    WHERE post_code = $1 AND date_start <= $2
+    ORDER BY type, date_start DESC, value DESC
+	) AS subquery
+	ORDER BY value DESC;
+    `
+
+	rows, err := r.dbPool.Query(ctx, query, postCode, date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var cv model.ControlValue
+		if err := rows.Scan(&cv.ID, &cv.PostCode, &cv.Type, &cv.DateStart, &cv.Value); err != nil {
+			return nil, err
+		}
+		controlValues = append(controlValues, cv)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return controlValues, nil
 }

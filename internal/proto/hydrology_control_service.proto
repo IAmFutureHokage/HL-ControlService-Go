@@ -83,6 +83,7 @@ message CheckWaterLevelRequest {
     string post_code = 2;
     uint32 value = 3;
 }
+
 message CheckWaterLevelResponse {
     uint32 excess = 1;
 }
