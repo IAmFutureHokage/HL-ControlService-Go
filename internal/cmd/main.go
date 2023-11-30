@@ -8,7 +8,6 @@ import (
 
 	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/service"
 	pb "github.com/IAmFutureHokage/HL-ControlService-Go/internal/proto"
-	"github.com/IAmFutureHokage/HL-ControlService-Go/pkg/database"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 )
@@ -35,8 +34,6 @@ func main() {
 	if port == 0 {
 		log.Fatal("Server port is not set in the config file")
 	}
-
-	_, _ = database.OpenDB()
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
