@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/domain/model"
 	"github.com/spf13/viper"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -34,7 +33,7 @@ func OpenDB() (*gorm.DB, error) {
 
 	fmt.Println("Database connection successful...")
 
-	db.AutoMigrate(&model.NFAD{})
+	// db.AutoMigrate(&model.NFAD{})
 
 	return db, nil
 }

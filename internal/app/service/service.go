@@ -1,23 +1,19 @@
 package service
 
 import (
-	"time"
-
-	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/domain/model"
 	pb "github.com/IAmFutureHokage/HL-ControlService-Go/internal/proto"
-	"gorm.io/gorm"
 )
 
-type Repository interface {
-	Create(tx *gorm.DB, data model.NFAD) error
-	Delete(tx *gorm.DB, id string) error
-	Update(tx *gorm.DB, data model.NFAD) error
-	GetById(tx *gorm.DB, id string) (*model.NFAD, error)
-	GetByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte, pageNumber, pageSize int) (int, []*model.NFAD, error)
-	GetActiveByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte) (*model.NFAD, error)
-	GetByPostCodeAndDate(tx *gorm.DB, postCode int, date time.Time) ([]*model.NFAD, error)
-	GetByDateRange(tx *gorm.DB, postCode int, startDate, endDate time.Time) ([]*model.NFAD, error)
-}
+// type Repository interface {
+// 	Create(tx *gorm.DB, data model.NFAD) error
+// 	Delete(tx *gorm.DB, id string) error
+// 	Update(tx *gorm.DB, data model.NFAD) error
+// 	GetById(tx *gorm.DB, id string) (*model.NFAD, error)
+// 	GetByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte, pageNumber, pageSize int) (int, []*model.NFAD, error)
+// 	GetActiveByPostCodeAndType(tx *gorm.DB, postCode int, typeNfad byte) (*model.NFAD, error)
+// 	GetByPostCodeAndDate(tx *gorm.DB, postCode int, date time.Time) ([]*model.NFAD, error)
+// 	GetByDateRange(tx *gorm.DB, postCode int, startDate, endDate time.Time) ([]*model.NFAD, error)
+// }
 
 type HydrologyStatsService struct {
 	pb.UnimplementedHydrologyStatsServiceServer

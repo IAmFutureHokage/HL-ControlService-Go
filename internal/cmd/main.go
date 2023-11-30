@@ -6,9 +6,9 @@ import (
 	"net"
 	"os"
 
-	"github.com/IAmFutureHokage/HL-ControlService-Go/database"
 	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/service"
 	pb "github.com/IAmFutureHokage/HL-ControlService-Go/internal/proto"
+	"github.com/IAmFutureHokage/HL-ControlService-Go/pkg/database"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 )
