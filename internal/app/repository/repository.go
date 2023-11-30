@@ -50,16 +50,31 @@ func (r *HydrologyStatsRepository) RemoveControlValue(ctx context.Context, id st
 	return nil
 }
 
-// func (r HydrologyStatsRepository) Update(tx *gorm.DB, data model.NFAD) error {
-// 	updateData := map[string]interface{}{
-// 		"PostCode":  data.PostCode,
-// 		"Type":      data.Type,
-// 		"DateStart": data.DateStart,
-// 		"Value":     data.Value,
-// 	}
+func (r *HydrologyStatsRepository) UpdateControlValues(ctx context.Context, values []model.ControlValue) error {
 
-// 	return tx.Model(&model.NFAD{}).Where("id = ?", data.ID).Updates(updateData).Error
-// }
+	tx, err := r.dbPool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	for _, value := range values {
+		sql := `UPDATE control_values SET post_code = $1, type = $2, date_start = $3, value = $4 WHERE id = $5 AND NOT EXISTS (
+                    SELECT 1 FROM control_values WHERE post_code = $1 AND type = $2 AND date_start = $3 AND id != $5
+                );`
+
+		commandTag, err := tx.Exec(ctx, sql, value.PostCode, value.Type, value.DateStart, value.Value, value.ID)
+		if err != nil {
+			return err
+		}
+
+		if commandTag.RowsAffected() == 0 {
+			return fmt.Errorf("update failed for control value with id: %s", value.ID)
+		}
+	}
+
+	return tx.Commit(ctx)
+}
 
 // func (r HydrologyStatsRepository) GetById(tx *gorm.DB, id string) (*model.NFAD, error) {
 // 	var nfad model.NFAD

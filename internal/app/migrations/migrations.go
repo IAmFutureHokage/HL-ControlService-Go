@@ -21,4 +21,7 @@ BEGIN
     END IF;
 END
 $$;
+
+CREATE INDEX IF NOT EXISTS idx_control_values_post_code_type_date ON control_values(post_code, type, date_start);
+CREATE INDEX IF NOT EXISTS idx_control_values_date_start ON control_values(date_start);
 `
