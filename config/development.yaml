@@ -7,3 +7,4 @@ database:
   user: postgres
   password: Primlab2020
   dbname: lolkek
+  poolsize: 20

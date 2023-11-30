@@ -3,14 +3,6 @@ package repository
 type HydrologyStatsRepository struct {
 }
 
-// func (r HydrologyStatsRepository) BeginTransaction() (*gorm.DB, error) {
-// 	db, err := database.OpenDB()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return db.Begin(), nil
-// }
-
 // func (r HydrologyStatsRepository) Create(tx *gorm.DB, data model.NFAD) error {
 // 	return tx.Create(&data).Error
 // }

@@ -5,9 +5,9 @@ import (
 )
 
 type ControlValue struct {
-	ID        string           `gorm:"primarykey;not null"`
-	PostCode  string           `gorm:"not null"`
-	Type      ControlValueType `gorm:"not null"`
-	DateStart time.Time        `gorm:"not null"`
-	Value     uint32           `gorm:"not null"`
+	ID        string
+	PostCode  string
+	Type      ControlValueType
+	DateStart time.Time
+	Value     uint32
 }
