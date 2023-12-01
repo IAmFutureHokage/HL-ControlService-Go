@@ -18,6 +18,7 @@ type HydrologyStatsRepository interface {
 	UpdateControlValue(ctx context.Context, values []model.ControlValue) error
 	GetControlValues(ctx context.Context, postCode string, controlType model.ControlValueType, page, pageSize int) ([]model.ControlValue, int, error)
 	GetControlValuesByDay(ctx context.Context, postCode string, date time.Time) ([]model.ControlValue, error)
+	GetControlValuesByDateInterval(ctx context.Context, postCode string, dateStart, dateEnd time.Time) ([]model.ControlValue, error)
 }
 
 type HydrologyStatsService struct {
