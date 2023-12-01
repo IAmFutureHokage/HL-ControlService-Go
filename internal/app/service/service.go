@@ -191,3 +191,55 @@ func (s *HydrologyStatsService) GetStatByDay(ctx context.Context, req *pb.GetSta
 		},
 	}, nil
 }
+
+func (s *HydrologyStatsService) GetStats(ctx context.Context, req *pb.GetStatsRequest) (*pb.GetStatsResponse, error) {
+
+	startDate := req.GetStartDate().AsTime().Truncate(24 * time.Hour)
+	endDate := req.GetEndDate().AsTime().Truncate(24 * time.Hour)
+	postCode := req.GetPostCode()
+
+	controlValues, err := s.repo.GetControlValuesByDateInterval(ctx, postCode, startDate, endDate)
+	if err != nil {
+		return nil, err
+	}
+
+	numDays := int(endDate.Sub(startDate).Hours()/24) + 1
+	allStats := make([]*pb.StatByDay, numDays)
+
+	for i := 0; i < numDays; i++ {
+		currentDay := startDate.AddDate(0, 0, i)
+		nextDay := currentDay.AddDate(0, 0, 1)
+		dayStats := &pb.StatByDay{
+			Date: timestamppb.New(currentDay),
+		}
+
+		latestValues := make(map[int]*model.ControlValue)
+
+		for _, cv := range controlValues {
+			cvCopy := cv
+			if cvCopy.DateStart.Before(nextDay) && cvCopy.DateStart.Before(currentDay) {
+				if latest, exists := latestValues[int(cvCopy.Type)]; !exists || (latest != nil && cvCopy.DateStart.After(latest.DateStart)) {
+					latestValues[int(cvCopy.Type)] = &cvCopy
+				}
+			}
+		}
+
+		dayStats.Norm = getValueFromLatest(latestValues, 1)
+		dayStats.Floodplain = getValueFromLatest(latestValues, 2)
+		dayStats.Adverse = getValueFromLatest(latestValues, 3)
+		dayStats.Dangerous = getValueFromLatest(latestValues, 4)
+
+		allStats[i] = dayStats
+	}
+
+	return &pb.GetStatsResponse{
+		Stats: allStats,
+	}, nil
+}
+
+func getValueFromLatest(latestValues map[int]*model.ControlValue, controlType int) uint32 {
+	if latest, exists := latestValues[controlType]; exists && latest != nil {
+		return latest.Value
+	}
+	return 0
+}
