@@ -142,3 +142,42 @@ func (r *HydrologyStatsRepository) GetControlValuesByDay(ctx context.Context, po
 
 	return controlValues, nil
 }
+
+func (r *HydrologyStatsRepository) GetControlValuesByDateInterval(ctx context.Context, postCode string, dateStart, dateEnd time.Time) ([]model.ControlValue, error) {
+	var controlValues []model.ControlValue
+
+	query := `
+    WITH latest_before_start AS (
+        SELECT DISTINCT ON (type) id, post_code, type, date_start, value
+        FROM control_values
+        WHERE post_code = $1 AND date_start < $2
+        ORDER BY type, date_start DESC
+    )
+    SELECT id, post_code, type, date_start, value
+    FROM control_values
+    WHERE post_code = $1 AND date_start BETWEEN $2 AND $3
+    UNION ALL
+    SELECT * FROM latest_before_start
+    ORDER BY date_start
+    `
+
+	rows, err := r.dbPool.Query(ctx, query, postCode, dateStart, dateEnd)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var cv model.ControlValue
+		if err := rows.Scan(&cv.ID, &cv.PostCode, &cv.Type, &cv.DateStart, &cv.Value); err != nil {
+			return nil, err
+		}
+		controlValues = append(controlValues, cv)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return controlValues, nil
+}
