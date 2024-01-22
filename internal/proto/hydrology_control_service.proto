@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
 
 package hydrologycontrol;
 
@@ -12,7 +13,6 @@ service HydrologyStatsService {
     rpc UpdateControlValue(UpdateControlValueRequest) returns (UpdateControlValueResponse);
     rpc GetControlValues(GetControlValuesRequest) returns (GetControlValuesResponse);
     rpc CheckWaterLevel(CheckWaterLevelRequest) returns (CheckWaterLevelResponse);
-    rpc GetStatByDay(GetStatByDayRequest) returns (GetStatByDayResponse);
     rpc GetStats(GetStatsRequest) returns (GetStatsResponse);
 }
 
@@ -24,12 +24,13 @@ message ControlValue {
     uint32 value = 7;
 }
 
-message StatByDay {
+message StatsDay {
     google.protobuf.Timestamp date = 1;
     uint32 norm = 2;
     uint32 floodplain = 3;
     uint32 adverse = 4;
     uint32 dangerous = 5;
+    google.protobuf.Int32Value waterlevel = 6;
 }
 
 enum ControlValueType {
@@ -88,14 +89,6 @@ message CheckWaterLevelResponse {
     uint32 excess = 1;
 }
 
-message GetStatByDayRequest {
-    string post_code = 1;
-    google.protobuf.Timestamp date = 2;
-}
-message GetStatByDayResponse {
-    StatByDay stat = 1;
-}
-
 message GetStatsRequest {
     string post_code = 1;
     google.protobuf.Timestamp start_date = 2;
@@ -103,5 +96,5 @@ message GetStatsRequest {
 }
 
 message GetStatsResponse {
-    repeated StatByDay stats = 1;
+    repeated StatsDay stats = 1;
 }

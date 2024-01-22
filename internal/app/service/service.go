@@ -156,43 +156,6 @@ func (s *HydrologyStatsService) CheckWaterLevel(ctx context.Context, req *pb.Che
 	}, nil
 }
 
-func (s *HydrologyStatsService) GetStatByDay(ctx context.Context, req *pb.GetStatByDayRequest) (*pb.GetStatByDayResponse, error) {
-
-	date := req.GetDate().AsTime().Truncate(24 * time.Hour)
-
-	controlValues, err := s.repo.GetControlValuesByDay(ctx, req.GetPostCode(), date)
-	if err != nil {
-		return nil, err
-	}
-
-	norm, floodplain, adverse, dangerous := 0, 0, 0, 0
-
-	for _, cv := range controlValues {
-		if cv.Type.ToByte() == 1 {
-			norm = int(cv.Value)
-		}
-		if cv.Type.ToByte() == 2 {
-			floodplain = int(cv.Value)
-		}
-		if cv.Type.ToByte() == 3 {
-			adverse = int(cv.Value)
-		}
-		if cv.Type.ToByte() == 4 {
-			dangerous = int(cv.Value)
-		}
-	}
-
-	return &pb.GetStatByDayResponse{
-		Stat: &pb.StatByDay{
-			Date:       timestamppb.New(date),
-			Norm:       uint32(norm),
-			Floodplain: uint32(floodplain),
-			Adverse:    uint32(adverse),
-			Dangerous:  uint32(dangerous),
-		},
-	}, nil
-}
-
 func (s *HydrologyStatsService) GetStats(ctx context.Context, req *pb.GetStatsRequest) (*pb.GetStatsResponse, error) {
 
 	startDate := req.GetStartDate().AsTime().Truncate(24 * time.Hour)
