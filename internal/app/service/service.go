@@ -168,12 +168,12 @@ func (s *HydrologyStatsService) GetStats(ctx context.Context, req *pb.GetStatsRe
 	}
 
 	numDays := int(endDate.Sub(startDate).Hours()/24) + 1
-	allStats := make([]*pb.StatByDay, numDays)
+	allStats := make([]*pb.StatsDay, numDays)
 
 	for i := 0; i < numDays; i++ {
 		currentDay := startDate.AddDate(0, 0, i)
 		nextDay := currentDay.AddDate(0, 0, 1)
-		dayStats := &pb.StatByDay{
+		dayStats := &pb.StatsDay{
 			Date: timestamppb.New(currentDay),
 		}
 

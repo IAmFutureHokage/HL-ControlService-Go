@@ -181,3 +181,64 @@ func (r *HydrologyStatsRepository) GetControlValuesByDateInterval(ctx context.Co
 
 	return controlValues, nil
 }
+
+func (r *HydrologyStatsRepository) AddWaterlevel(ctx context.Context, value model.Waterlevel) error {
+	sqlUpdate := `
+        UPDATE waterlevels SET waterlevel = $1 WHERE date = $2 AND post_code = $3;
+    `
+	result, err := r.dbPool.Exec(ctx, sqlUpdate, value.Waterlevel, value.Date, value.PostCode)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected := result.RowsAffected()
+
+	if rowsAffected == 0 {
+		sqlInsert := `
+            INSERT INTO waterlevels (id, post_code, date, waterlevel) VALUES ($1, $2, $3, $4);
+        `
+		_, err := r.dbPool.Exec(ctx, sqlInsert, value.Id, value.PostCode, value.Date, value.Waterlevel)
+		return err
+	}
+
+	return nil
+}
+
+func (r *HydrologyStatsRepository) GetWaterlevelsByDateInterval(ctx context.Context, postCode string, dateStart, dateEnd time.Time) ([]model.Waterlevel, error) {
+	var waterlevels []model.Waterlevel
+
+	query := `
+        WITH latest_before_start AS (
+            SELECT DISTINCT ON (post_code) id, post_code, date, waterlevel
+            FROM waterlevels
+            WHERE post_code = $1 AND date < $2
+            ORDER BY post_code, date DESC
+        )
+        SELECT id, post_code, date, waterlevel
+        FROM waterlevels
+        WHERE post_code = $1 AND date BETWEEN $2 AND $3
+        UNION ALL
+        SELECT * FROM latest_before_start
+        ORDER BY date
+    `
+
+	rows, err := r.dbPool.Query(ctx, query, postCode, dateStart, dateEnd)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var wl model.Waterlevel
+		if err := rows.Scan(&wl.Id, &wl.PostCode, &wl.Date, &wl.Waterlevel); err != nil {
+			return nil, err
+		}
+		waterlevels = append(waterlevels, wl)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return waterlevels, nil
+}

@@ -1,5 +1,5 @@
 server:
-  port: 50051
+  port: 50052
 
 database:
   host: localhost
@@ -8,3 +8,8 @@ database:
   password: Primlab2020
   dbname: lolkek
   poolsize: 20
+
+kafka:
+  broker_list:
+    - "localhost:9092"
+  topic: "testtopic"

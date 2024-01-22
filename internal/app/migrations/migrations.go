@@ -9,6 +9,13 @@ CREATE TABLE IF NOT EXISTS control_values (
     value INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS waterlevels (
+    id TEXT PRIMARY KEY,
+    post_code TEXT NOT NULL,
+    date TIMESTAMP NOT NULL,
+    waterlevel INTEGER NOT NULL
+);
+
 DO $$
 BEGIN
     IF NOT EXISTS (

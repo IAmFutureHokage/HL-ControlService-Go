@@ -12,11 +12,15 @@ import (
 	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/service"
 	pb "github.com/IAmFutureHokage/HL-ControlService-Go/internal/proto"
 	"github.com/IAmFutureHokage/HL-ControlService-Go/pkg/database"
+	"github.com/IAmFutureHokage/HL-ControlService-Go/pkg/kafka"
+	"github.com/Shopify/sarama"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 )
 
 var dbConfig database.Config
+var kafkaConfig kafka.KafkaConfig
+var kafkaProducer sarama.SyncProducer
 
 func init() {
 	env := os.Getenv("APP_ENV")
@@ -39,6 +43,17 @@ func init() {
 		Password: viper.GetString("database.password"),
 		DBName:   viper.GetString("database.dbname"),
 		PoolSize: viper.GetInt("database.poolsize"),
+	}
+
+	kafkaConfig = kafka.KafkaConfig{
+		BrokerList: viper.GetStringSlice("kafka.broker_list"),
+		Topic:      viper.GetString("kafka.topic"),
+	}
+
+	var err error
+	kafkaProducer, err = kafka.NewKafkaProducer(kafkaConfig)
+	if err != nil {
+		log.Fatalf("Error creating Kafka producer: %v", err)
 	}
 }
 
@@ -69,6 +84,11 @@ func main() {
 
 	repo := repository.NewHydrologyStatsRepository(dbPool)
 	hydrologyStatsService := service.NewHydrologyStatsService(repo)
+	kafkaMessageService := service.NewKafkaMessageService(repo)
+
+	go func() {
+		kafka.SubscribeToTopic(kafkaConfig, kafkaMessageService)
+	}()
 
 	s := grpc.NewServer()
 	pb.RegisterHydrologyStatsServiceServer(s, hydrologyStatsService)

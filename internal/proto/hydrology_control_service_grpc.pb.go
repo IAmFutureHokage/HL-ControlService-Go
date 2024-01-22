@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v4.25.0
-// source: proto/hydrology_control_service.proto
+// source: internal/proto/hydrology_control_service.proto
 
 package HL_ControlService_Go
 
@@ -24,7 +24,6 @@ const (
 	HydrologyStatsService_UpdateControlValue_FullMethodName = "/hydrologycontrol.HydrologyStatsService/UpdateControlValue"
 	HydrologyStatsService_GetControlValues_FullMethodName   = "/hydrologycontrol.HydrologyStatsService/GetControlValues"
 	HydrologyStatsService_CheckWaterLevel_FullMethodName    = "/hydrologycontrol.HydrologyStatsService/CheckWaterLevel"
-	HydrologyStatsService_GetStatByDay_FullMethodName       = "/hydrologycontrol.HydrologyStatsService/GetStatByDay"
 	HydrologyStatsService_GetStats_FullMethodName           = "/hydrologycontrol.HydrologyStatsService/GetStats"
 )
 
@@ -37,7 +36,6 @@ type HydrologyStatsServiceClient interface {
 	UpdateControlValue(ctx context.Context, in *UpdateControlValueRequest, opts ...grpc.CallOption) (*UpdateControlValueResponse, error)
 	GetControlValues(ctx context.Context, in *GetControlValuesRequest, opts ...grpc.CallOption) (*GetControlValuesResponse, error)
 	CheckWaterLevel(ctx context.Context, in *CheckWaterLevelRequest, opts ...grpc.CallOption) (*CheckWaterLevelResponse, error)
-	GetStatByDay(ctx context.Context, in *GetStatByDayRequest, opts ...grpc.CallOption) (*GetStatByDayResponse, error)
 	GetStats(ctx context.Context, in *GetStatsRequest, opts ...grpc.CallOption) (*GetStatsResponse, error)
 }
 
@@ -94,15 +92,6 @@ func (c *hydrologyStatsServiceClient) CheckWaterLevel(ctx context.Context, in *C
 	return out, nil
 }
 
-func (c *hydrologyStatsServiceClient) GetStatByDay(ctx context.Context, in *GetStatByDayRequest, opts ...grpc.CallOption) (*GetStatByDayResponse, error) {
-	out := new(GetStatByDayResponse)
-	err := c.cc.Invoke(ctx, HydrologyStatsService_GetStatByDay_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *hydrologyStatsServiceClient) GetStats(ctx context.Context, in *GetStatsRequest, opts ...grpc.CallOption) (*GetStatsResponse, error) {
 	out := new(GetStatsResponse)
 	err := c.cc.Invoke(ctx, HydrologyStatsService_GetStats_FullMethodName, in, out, opts...)
@@ -121,7 +110,6 @@ type HydrologyStatsServiceServer interface {
 	UpdateControlValue(context.Context, *UpdateControlValueRequest) (*UpdateControlValueResponse, error)
 	GetControlValues(context.Context, *GetControlValuesRequest) (*GetControlValuesResponse, error)
 	CheckWaterLevel(context.Context, *CheckWaterLevelRequest) (*CheckWaterLevelResponse, error)
-	GetStatByDay(context.Context, *GetStatByDayRequest) (*GetStatByDayResponse, error)
 	GetStats(context.Context, *GetStatsRequest) (*GetStatsResponse, error)
 	mustEmbedUnimplementedHydrologyStatsServiceServer()
 }
@@ -144,9 +132,6 @@ func (UnimplementedHydrologyStatsServiceServer) GetControlValues(context.Context
 }
 func (UnimplementedHydrologyStatsServiceServer) CheckWaterLevel(context.Context, *CheckWaterLevelRequest) (*CheckWaterLevelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckWaterLevel not implemented")
-}
-func (UnimplementedHydrologyStatsServiceServer) GetStatByDay(context.Context, *GetStatByDayRequest) (*GetStatByDayResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetStatByDay not implemented")
 }
 func (UnimplementedHydrologyStatsServiceServer) GetStats(context.Context, *GetStatsRequest) (*GetStatsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetStats not implemented")
@@ -254,24 +239,6 @@ func _HydrologyStatsService_CheckWaterLevel_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _HydrologyStatsService_GetStatByDay_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetStatByDayRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HydrologyStatsServiceServer).GetStatByDay(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HydrologyStatsService_GetStatByDay_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HydrologyStatsServiceServer).GetStatByDay(ctx, req.(*GetStatByDayRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _HydrologyStatsService_GetStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetStatsRequest)
 	if err := dec(in); err != nil {
@@ -318,14 +285,10 @@ var HydrologyStatsService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _HydrologyStatsService_CheckWaterLevel_Handler,
 		},
 		{
-			MethodName: "GetStatByDay",
-			Handler:    _HydrologyStatsService_GetStatByDay_Handler,
-		},
-		{
 			MethodName: "GetStats",
 			Handler:    _HydrologyStatsService_GetStats_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/hydrology_control_service.proto",
+	Metadata: "internal/proto/hydrology_control_service.proto",
 }
