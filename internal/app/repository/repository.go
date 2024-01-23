@@ -204,6 +204,20 @@ func (r *HydrologyStatsRepository) AddWaterlevel(ctx context.Context, value mode
 	return nil
 }
 
+func (r *HydrologyStatsRepository) GetStartInterval(ctx context.Context, postCode string) (time.Time, error) {
+	sql := `
+        SELECT MIN(date) FROM waterlevels WHERE post_code = $1;
+    `
+
+	var startDate time.Time
+	err := r.dbPool.QueryRow(ctx, sql, postCode).Scan(&startDate)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return startDate, nil
+}
+
 func (r *HydrologyStatsRepository) GetWaterlevelsByDateInterval(ctx context.Context, postCode string, dateStart, dateEnd time.Time) ([]model.Waterlevel, error) {
 	var waterlevels []model.Waterlevel
 
