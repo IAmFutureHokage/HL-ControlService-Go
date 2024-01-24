@@ -147,19 +147,19 @@ func (r *HydrologyStatsRepository) GetControlValuesByDateInterval(ctx context.Co
 	var controlValues []model.ControlValue
 
 	query := `
-    WITH latest_before_start AS (
-        SELECT DISTINCT ON (type) id, post_code, type, date_start, value
-        FROM control_values
-        WHERE post_code = $1 AND date_start < $2
-        ORDER BY type, date_start DESC
-    )
-    SELECT id, post_code, type, date_start, value
-    FROM control_values
-    WHERE post_code = $1 AND date_start BETWEEN $2 AND $3
-    UNION ALL
-    SELECT * FROM latest_before_start
-    ORDER BY date_start
-    `
+	WITH latest_before_start AS (
+	    SELECT DISTINCT ON (type) id, post_code, type, date_start, value
+	    FROM control_values
+	    WHERE post_code = $1 AND date_start < $2
+	    ORDER BY type, date_start DESC
+	)
+	SELECT id, post_code, type, date_start, value
+	FROM control_values
+	WHERE post_code = $1 AND date_start BETWEEN $2 AND $3
+	UNION ALL
+	SELECT * FROM latest_before_start
+	ORDER BY date_start
+	`
 
 	rows, err := r.dbPool.Query(ctx, query, postCode, dateStart, dateEnd)
 	if err != nil {
@@ -222,19 +222,19 @@ func (r *HydrologyStatsRepository) GetWaterlevelsByDateInterval(ctx context.Cont
 	var waterlevels []model.Waterlevel
 
 	query := `
-        WITH latest_before_start AS (
-            SELECT DISTINCT ON (post_code) id, post_code, date, waterlevel
-            FROM waterlevels
-            WHERE post_code = $1 AND date < $2
-            ORDER BY post_code, date DESC
-        )
-        SELECT id, post_code, date, waterlevel
-        FROM waterlevels
-        WHERE post_code = $1 AND date BETWEEN $2 AND $3
-        UNION ALL
-        SELECT * FROM latest_before_start
-        ORDER BY date
-    `
+	    WITH latest_before_start AS (
+	        SELECT DISTINCT ON (post_code) id, post_code, date, waterlevel
+	        FROM waterlevels
+	        WHERE post_code = $1 AND date < $2
+	        ORDER BY post_code, date DESC
+	    )
+	    SELECT id, post_code, date, waterlevel
+	    FROM waterlevels
+	    WHERE post_code = $1 AND date BETWEEN $2 AND $3
+	    UNION ALL
+	    SELECT * FROM latest_before_start
+	    ORDER BY date
+	`
 
 	rows, err := r.dbPool.Query(ctx, query, postCode, dateStart, dateEnd)
 	if err != nil {

@@ -93,8 +93,10 @@ message GetStatsRequest {
     string post_code = 1;
     google.protobuf.Timestamp start_date = 2;
     google.protobuf.Timestamp end_date = 3;
+    uint32 graph_points = 4;
 }
 
 message GetStatsResponse {
-    repeated StatsDay stats = 1;
+    google.protobuf.Timestamp start_interval = 1;
+    repeated StatsDay stats = 2;
 }

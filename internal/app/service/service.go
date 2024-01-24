@@ -2,7 +2,10 @@ package service
 
 import (
 	"context"
+
+	//"fmt"
 	"math"
+	"sync"
 	"time"
 
 	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/model"
@@ -10,6 +13,7 @@ import (
 	pb "github.com/IAmFutureHokage/HL-ControlService-Go/internal/proto"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 type HydrologyStatsRepository interface {
@@ -161,49 +165,173 @@ func (s *HydrologyStatsService) GetStats(ctx context.Context, req *pb.GetStatsRe
 	startDate := req.GetStartDate().AsTime().Truncate(24 * time.Hour)
 	endDate := req.GetEndDate().AsTime().Truncate(24 * time.Hour)
 	postCode := req.GetPostCode()
+	graphPoints := req.GetGraphPoints()
 
-	controlValues, err := s.repo.GetControlValuesByDateInterval(ctx, postCode, startDate, endDate)
-	if err != nil {
-		return nil, err
+	controlValuesCh := make(chan []model.ControlValue)
+	waterLevelsCh := make(chan []model.Waterlevel)
+	startWaterIntervalCh := make(chan time.Time, 1)
+	errorCh := make(chan error)
+	doneCh := make(chan struct{})
+	once := sync.Once{}
+
+	go func() {
+		defer func() {
+			close(controlValuesCh)
+			once.Do(func() { close(doneCh) })
+		}()
+
+		controlValues, err := s.repo.GetControlValuesByDateInterval(ctx, postCode, startDate, endDate)
+		if err != nil {
+			errorCh <- err
+			return
+		}
+		controlValuesCh <- controlValues
+	}()
+
+	go func() {
+		defer func() {
+			close(waterLevelsCh)
+			once.Do(func() { close(doneCh) })
+		}()
+
+		waterLevels, err := s.repo.GetWaterlevelsByDateInterval(ctx, postCode, startDate, endDate)
+		if err != nil {
+			errorCh <- err
+			return
+		}
+		waterLevelsCh <- waterLevels
+	}()
+
+	go func() {
+		defer func() {
+			close(startWaterIntervalCh)
+			once.Do(func() { close(doneCh) })
+		}()
+
+		startWaterInterval, err := s.repo.GetStartInterval(ctx, postCode)
+		if err != nil {
+			errorCh <- err
+			return
+		}
+		startWaterIntervalCh <- startWaterInterval
+	}()
+
+	<-doneCh
+
+	controlValues := <-controlValuesCh
+	waterLevels := <-waterLevelsCh
+	startWaterInterval := <-startWaterIntervalCh
+	startInterval := timestamppb.New(startWaterInterval)
+
+	var funcCheck bool
+	if uint32(len(waterLevels)) < graphPoints {
+		graphPoints = uint32(len(waterLevels))
+		funcCheck = true
 	}
 
-	numDays := int(endDate.Sub(startDate).Hours()/24) + 1
-	allStats := make([]*pb.StatsDay, numDays)
+	allStats := make([]*pb.StatsDay, graphPoints)
+	var dates []time.Time
 
-	for i := 0; i < numDays; i++ {
-		currentDay := startDate.AddDate(0, 0, i)
-		nextDay := currentDay.AddDate(0, 0, 1)
-		dayStats := &pb.StatsDay{
-			Date: timestamppb.New(currentDay),
+	if funcCheck {
+		allStats, dates = allWaterPoints(waterLevels, allStats, graphPoints)
+	} else {
+		allStats, dates, graphPoints = rangedWaterPoints(waterLevels, allStats, graphPoints)
+	}
+
+	var norm []model.ControlValue
+	var floodplain []model.ControlValue
+	var adverse []model.ControlValue
+	var dangerous []model.ControlValue
+
+	for _, cv := range controlValues {
+		cvCopy := cv
+		if cvCopy.Type == 1 {
+			norm = append(norm, cvCopy)
 		}
-
-		latestValues := make(map[int]*model.ControlValue)
-
-		for _, cv := range controlValues {
-			cvCopy := cv
-			if cvCopy.DateStart.Before(nextDay) && cvCopy.DateStart.Before(currentDay) {
-				if latest, exists := latestValues[int(cvCopy.Type)]; !exists || (latest != nil && cvCopy.DateStart.After(latest.DateStart)) {
-					latestValues[int(cvCopy.Type)] = &cvCopy
-				}
-			}
+		if cvCopy.Type == 2 {
+			floodplain = append(floodplain, cvCopy)
 		}
+		if cvCopy.Type == 3 {
+			adverse = append(adverse, cvCopy)
+		}
+		if cvCopy.Type == 4 {
+			dangerous = append(dangerous, cvCopy)
+		}
+	}
 
-		dayStats.Norm = getValueFromLatest(latestValues, 1)
-		dayStats.Floodplain = getValueFromLatest(latestValues, 2)
-		dayStats.Adverse = getValueFromLatest(latestValues, 3)
-		dayStats.Dangerous = getValueFromLatest(latestValues, 4)
-
-		allStats[i] = dayStats
+	for i := 0; i < int(len(allStats)); i++ {
+		allStats[i].Norm = getTypeLevel(norm, dates[i])
+		allStats[i].Floodplain = getTypeLevel(floodplain, dates[i])
+		allStats[i].Adverse = getTypeLevel(adverse, dates[i])
+		allStats[i].Dangerous = getTypeLevel(dangerous, dates[i])
 	}
 
 	return &pb.GetStatsResponse{
-		Stats: allStats,
+		StartInterval: startInterval,
+		Stats:         allStats,
 	}, nil
 }
 
-func getValueFromLatest(latestValues map[int]*model.ControlValue, controlType int) uint32 {
-	if latest, exists := latestValues[controlType]; exists && latest != nil {
-		return latest.Value
+func getTypeLevel(values []model.ControlValue, date time.Time) uint32 {
+	if len(values) == 0 {
+		return 0
 	}
+	if len(values) == 1 {
+		return uint32(values[0].Value)
+	}
+	for i := range values {
+		if values[i].DateStart.Before(date) && values[i+1].DateStart.After(date) || values[i].DateStart == date {
+			return uint32(values[i].Value)
+		}
+		if i == len(values)-2 {
+			return uint32(values[i+1].Value)
+		}
+	}
+
 	return 0
+}
+
+func allWaterPoints(waterLevels []model.Waterlevel, allStats []*pb.StatsDay, points uint32) ([]*pb.StatsDay, []time.Time) {
+	dates := make([]time.Time, points)
+	for i := 0; i < int(points); i++ {
+		var stat pb.StatsDay
+		stat.Date = timestamppb.New(waterLevels[i].Date)
+		stat.Waterlevel = wrapperspb.Int32(int32(waterLevels[i].Waterlevel))
+		allStats[i] = &stat
+		dates[i] = waterLevels[i].Date
+	}
+
+	return allStats, dates
+}
+
+func rangedWaterPoints(waterLevels []model.Waterlevel, allStats []*pb.StatsDay, points uint32) ([]*pb.StatsDay, []time.Time, uint32) {
+	step := float64(len(waterLevels)) / float64(points)
+	dates := make([]time.Time, points)
+	h := 0
+
+	for i := float64(0); int(math.Round(i)) < len(waterLevels); i += step {
+		var stat pb.StatsDay
+		stat.Date = timestamppb.New(waterLevels[int(math.Round(i))].Date)
+		stat.Waterlevel = wrapperspb.Int32(int32(waterLevels[int(math.Round(i))].Waterlevel))
+		allStats[h] = &stat
+		dates[h] = waterLevels[int(math.Round(i))].Date
+		h++
+		if h == int(points) {
+			return allStats, dates, points
+		}
+	}
+
+	points = uint32(len(allStats))
+
+	if points != 100 {
+		newAllStats := make([]*pb.StatsDay, points)
+		copy(newAllStats, allStats)
+		allStats = newAllStats
+
+		newDates := make([]time.Time, points)
+		copy(newDates, dates)
+		dates = newDates
+	}
+
+	return allStats, dates, points
 }
