@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 
+	postgres "github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/infrastructure"
 	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/migrations"
 	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/service"
 	pb "github.com/IAmFutureHokage/HL-ControlService-Go/internal/proto"
@@ -81,7 +82,7 @@ func main() {
 		log.Fatalf("Failed to execute migration: %v", err)
 	}
 
-	postgres := repository.NewHydrologyStatsRepository(dbPool)
+	postgres := postgres.NewHydrologyStatsPostfresDAO(dbPool)
 	hydrologyStatsService := service.NewHydrologyStatsService(postgres)
 	kafkaMessageService := service.NewKafkaMessageService(postgres)
 

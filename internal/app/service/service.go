@@ -9,29 +9,30 @@ import (
 	"time"
 
 	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/model"
-	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/repository"
 	pb "github.com/IAmFutureHokage/HL-ControlService-Go/internal/proto"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-type HydrologyStatsRepository interface {
+type HydrologyStatsStorage interface {
 	AddControlValue(ctx context.Context, value model.ControlValue) error
 	RemoveControlValue(ctx context.Context, id string) error
-	UpdateControlValue(ctx context.Context, values []model.ControlValue) error
+	UpdateControlValues(ctx context.Context, values []model.ControlValue) error
 	GetControlValues(ctx context.Context, postCode string, controlType model.ControlValueType, page, pageSize int) ([]model.ControlValue, int, error)
 	GetControlValuesByDay(ctx context.Context, postCode string, date time.Time) ([]model.ControlValue, error)
 	GetControlValuesByDateInterval(ctx context.Context, postCode string, dateStart, dateEnd time.Time) ([]model.ControlValue, error)
+	GetStartInterval(ctx context.Context, postCode string) (time.Time, error)
+	GetWaterlevelsByDateInterval(ctx context.Context, postCode string, dateStart, dateEnd time.Time) ([]model.Waterlevel, error)
 }
 
 type HydrologyStatsService struct {
-	repo *repository.HydrologyStatsRepository
+	storage HydrologyStatsStorage
 	pb.UnimplementedHydrologyStatsServiceServer
 }
 
-func NewHydrologyStatsService(repo *repository.HydrologyStatsRepository) *HydrologyStatsService {
-	return &HydrologyStatsService{repo: repo}
+func NewHydrologyStatsService(storage HydrologyStatsStorage) *HydrologyStatsService {
+	return &HydrologyStatsService{storage: storage}
 }
 
 func (s *HydrologyStatsService) AddControlValue(ctx context.Context, req *pb.AddControlValueRequest) (*pb.AddControlValueResponse, error) {
@@ -44,7 +45,7 @@ func (s *HydrologyStatsService) AddControlValue(ctx context.Context, req *pb.Add
 		Value:     req.GetValue(),
 	}
 
-	if err := s.repo.AddControlValue(ctx, controlValue); err != nil {
+	if err := s.storage.AddControlValue(ctx, controlValue); err != nil {
 		return nil, err
 	}
 
@@ -61,7 +62,7 @@ func (s *HydrologyStatsService) AddControlValue(ctx context.Context, req *pb.Add
 
 func (s *HydrologyStatsService) RemoveControlValue(ctx context.Context, req *pb.RemoveControlValueRequest) (*pb.RemoveControlValueResponse, error) {
 
-	err := s.repo.RemoveControlValue(ctx, req.GetId())
+	err := s.storage.RemoveControlValue(ctx, req.GetId())
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +84,7 @@ func (s *HydrologyStatsService) UpdateControlValue(ctx context.Context, req *pb.
 		})
 	}
 
-	err := s.repo.UpdateControlValues(ctx, controlValues)
+	err := s.storage.UpdateControlValues(ctx, controlValues)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +112,7 @@ func (s *HydrologyStatsService) GetControlValues(ctx context.Context, req *pb.Ge
 		page = 1
 	}
 
-	controlValues, totalCount, err := s.repo.GetControlValues(ctx, req.GetPostCode(), model.ControlValueType(req.GetType()), page, pageSize)
+	controlValues, totalCount, err := s.storage.GetControlValues(ctx, req.GetPostCode(), model.ControlValueType(req.GetType()), page, pageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +142,7 @@ func (s *HydrologyStatsService) CheckWaterLevel(ctx context.Context, req *pb.Che
 
 	date := req.GetDate().AsTime().Truncate(24 * time.Hour)
 
-	controlValues, err := s.repo.GetControlValuesByDay(ctx, req.GetPostCode(), date)
+	controlValues, err := s.storage.GetControlValuesByDay(ctx, req.GetPostCode(), date)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +181,7 @@ func (s *HydrologyStatsService) GetStats(ctx context.Context, req *pb.GetStatsRe
 			once.Do(func() { close(doneCh) })
 		}()
 
-		controlValues, err := s.repo.GetControlValuesByDateInterval(ctx, postCode, startDate, endDate)
+		controlValues, err := s.storage.GetControlValuesByDateInterval(ctx, postCode, startDate, endDate)
 		if err != nil {
 			errorCh <- err
 			return
@@ -194,7 +195,7 @@ func (s *HydrologyStatsService) GetStats(ctx context.Context, req *pb.GetStatsRe
 			once.Do(func() { close(doneCh) })
 		}()
 
-		waterLevels, err := s.repo.GetWaterlevelsByDateInterval(ctx, postCode, startDate, endDate)
+		waterLevels, err := s.storage.GetWaterlevelsByDateInterval(ctx, postCode, startDate, endDate)
 		if err != nil {
 			errorCh <- err
 			return
@@ -208,7 +209,7 @@ func (s *HydrologyStatsService) GetStats(ctx context.Context, req *pb.GetStatsRe
 			once.Do(func() { close(doneCh) })
 		}()
 
-		startWaterInterval, err := s.repo.GetStartInterval(ctx, postCode)
+		startWaterInterval, err := s.storage.GetStartInterval(ctx, postCode)
 		if err != nil {
 			errorCh <- err
 			return

@@ -6,16 +6,19 @@ import (
 	"fmt"
 
 	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/model"
-	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/repository"
 	"github.com/google/uuid"
 )
 
-type KafkaMessageService struct {
-	repository *repository.HydrologyStatsRepository
+type WaterLevelStorage interface {
+	AddWaterlevel(ctx context.Context, value model.Waterlevel) error
 }
 
-func NewKafkaMessageService(repo *repository.HydrologyStatsRepository) *KafkaMessageService {
-	return &KafkaMessageService{repository: repo}
+type KafkaMessageService struct {
+	storage WaterLevelStorage
+}
+
+func NewKafkaMessageService(storage WaterLevelStorage) *KafkaMessageService {
+	return &KafkaMessageService{storage: storage}
 }
 
 func (s *KafkaMessageService) ProcessMessage(message []byte) error {
@@ -36,7 +39,7 @@ func (s *KafkaMessageService) ProcessMessage(message []byte) error {
 
 	fmt.Println(waterlevel)
 
-	if err := s.repository.AddWaterlevel(ctx, *waterlevel); err != nil {
+	if err := s.storage.AddWaterlevel(ctx, *waterlevel); err != nil {
 		fmt.Println("Не удалось добавить в базу")
 	}
 
