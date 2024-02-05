@@ -79,8 +79,8 @@ func (r *HydrologyStatsPostgres) UpdateControlValues(ctx context.Context, values
 
 func (r *HydrologyStatsPostgres) GetControlValues(ctx context.Context, postCode string, controlType model.ControlValueType, page, pageSize int) ([]model.ControlValue, int, error) {
 
-	var controlValues []model.ControlValue
 	var totalCount int
+	controlValues := make([]model.ControlValue, 0, pageSize)
 
 	query := `SELECT id, post_code, type, date_start, value FROM control_values WHERE post_code = $1 AND type = $2 ORDER BY date_start DESC LIMIT $3 OFFSET $4`
 	rows, err := r.dbPool.Query(ctx, query, postCode, controlType, pageSize, (page-1)*pageSize)
@@ -109,7 +109,12 @@ func (r *HydrologyStatsPostgres) GetControlValues(ctx context.Context, postCode 
 
 func (r *HydrologyStatsPostgres) GetControlValuesByDay(ctx context.Context, postCode string, date time.Time) ([]model.ControlValue, error) {
 
-	var controlValues []model.ControlValue
+	var count int
+	countQuery := `SELECT COUNT(DISTINCT type) FROM control_values WHERE post_code = $1 AND date_start <= $2`
+	if err := r.dbPool.QueryRow(ctx, countQuery, postCode, date).Scan(&count); err != nil {
+		return nil, err
+	}
+	controlValues := make([]model.ControlValue, 0, count)
 
 	query := `
 	SELECT id, post_code, type, date_start, value
