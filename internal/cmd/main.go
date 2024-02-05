@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/migrations"
-	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/repository"
 	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/service"
 	pb "github.com/IAmFutureHokage/HL-ControlService-Go/internal/proto"
 	"github.com/IAmFutureHokage/HL-ControlService-Go/pkg/database"
@@ -29,7 +28,7 @@ func init() {
 	}
 
 	viper.SetConfigName(env)
-	viper.AddConfigPath("../../config")
+	viper.AddConfigPath("./config")
 	viper.SetConfigType("yaml")
 
 	if err := viper.ReadInConfig(); err != nil {
@@ -82,9 +81,9 @@ func main() {
 		log.Fatalf("Failed to execute migration: %v", err)
 	}
 
-	repo := repository.NewHydrologyStatsRepository(dbPool)
-	hydrologyStatsService := service.NewHydrologyStatsService(repo)
-	kafkaMessageService := service.NewKafkaMessageService(repo)
+	postgres := repository.NewHydrologyStatsRepository(dbPool)
+	hydrologyStatsService := service.NewHydrologyStatsService(postgres)
+	kafkaMessageService := service.NewKafkaMessageService(postgres)
 
 	go func() {
 		kafka.SubscribeToTopic(kafkaConfig, kafkaMessageService)

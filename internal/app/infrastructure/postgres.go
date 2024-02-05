@@ -1,4 +1,4 @@
-package repository
+package postgres
 
 import (
 	"context"
@@ -9,15 +9,15 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-type HydrologyStatsRepository struct {
+type HydrologyStatsPostgres struct {
 	dbPool *pgxpool.Pool
 }
 
-func NewHydrologyStatsRepository(pool *pgxpool.Pool) *HydrologyStatsRepository {
-	return &HydrologyStatsRepository{dbPool: pool}
+func NewHydrologyStatsPostfresDAO(pool *pgxpool.Pool) *HydrologyStatsPostgres {
+	return &HydrologyStatsPostgres{dbPool: pool}
 }
 
-func (r *HydrologyStatsRepository) AddControlValue(ctx context.Context, value model.ControlValue) error {
+func (r *HydrologyStatsPostgres) AddControlValue(ctx context.Context, value model.ControlValue) error {
 
 	sql := `INSERT INTO control_values (id, post_code, type, date_start, value)
             VALUES ($1, $2, $3, $4, $5)
@@ -35,7 +35,7 @@ func (r *HydrologyStatsRepository) AddControlValue(ctx context.Context, value mo
 	return nil
 }
 
-func (r *HydrologyStatsRepository) RemoveControlValue(ctx context.Context, id string) error {
+func (r *HydrologyStatsPostgres) RemoveControlValue(ctx context.Context, id string) error {
 
 	sql := `DELETE FROM control_values WHERE id = $1;`
 
@@ -51,7 +51,7 @@ func (r *HydrologyStatsRepository) RemoveControlValue(ctx context.Context, id st
 	return nil
 }
 
-func (r *HydrologyStatsRepository) UpdateControlValues(ctx context.Context, values []model.ControlValue) error {
+func (r *HydrologyStatsPostgres) UpdateControlValues(ctx context.Context, values []model.ControlValue) error {
 
 	tx, err := r.dbPool.Begin(ctx)
 	if err != nil {
@@ -77,7 +77,7 @@ func (r *HydrologyStatsRepository) UpdateControlValues(ctx context.Context, valu
 	return tx.Commit(ctx)
 }
 
-func (r *HydrologyStatsRepository) GetControlValues(ctx context.Context, postCode string, controlType model.ControlValueType, page, pageSize int) ([]model.ControlValue, int, error) {
+func (r *HydrologyStatsPostgres) GetControlValues(ctx context.Context, postCode string, controlType model.ControlValueType, page, pageSize int) ([]model.ControlValue, int, error) {
 
 	var controlValues []model.ControlValue
 	var totalCount int
@@ -107,7 +107,7 @@ func (r *HydrologyStatsRepository) GetControlValues(ctx context.Context, postCod
 	return controlValues, totalCount, nil
 }
 
-func (r *HydrologyStatsRepository) GetControlValuesByDay(ctx context.Context, postCode string, date time.Time) ([]model.ControlValue, error) {
+func (r *HydrologyStatsPostgres) GetControlValuesByDay(ctx context.Context, postCode string, date time.Time) ([]model.ControlValue, error) {
 
 	var controlValues []model.ControlValue
 
@@ -143,7 +143,7 @@ func (r *HydrologyStatsRepository) GetControlValuesByDay(ctx context.Context, po
 	return controlValues, nil
 }
 
-func (r *HydrologyStatsRepository) GetControlValuesByDateInterval(ctx context.Context, postCode string, dateStart, dateEnd time.Time) ([]model.ControlValue, error) {
+func (r *HydrologyStatsPostgres) GetControlValuesByDateInterval(ctx context.Context, postCode string, dateStart, dateEnd time.Time) ([]model.ControlValue, error) {
 	var controlValues []model.ControlValue
 
 	query := `
@@ -182,7 +182,7 @@ func (r *HydrologyStatsRepository) GetControlValuesByDateInterval(ctx context.Co
 	return controlValues, nil
 }
 
-func (r *HydrologyStatsRepository) AddWaterlevel(ctx context.Context, value model.Waterlevel) error {
+func (r *HydrologyStatsPostgres) AddWaterlevel(ctx context.Context, value model.Waterlevel) error {
 	sqlUpdate := `
         UPDATE waterlevels SET waterlevel = $1 WHERE date = $2 AND post_code = $3;
     `
@@ -204,7 +204,7 @@ func (r *HydrologyStatsRepository) AddWaterlevel(ctx context.Context, value mode
 	return nil
 }
 
-func (r *HydrologyStatsRepository) GetStartInterval(ctx context.Context, postCode string) (time.Time, error) {
+func (r *HydrologyStatsPostgres) GetStartInterval(ctx context.Context, postCode string) (time.Time, error) {
 	sql := `
         SELECT MIN(date) FROM waterlevels WHERE post_code = $1;
     `
@@ -218,7 +218,7 @@ func (r *HydrologyStatsRepository) GetStartInterval(ctx context.Context, postCod
 	return startDate, nil
 }
 
-func (r *HydrologyStatsRepository) GetWaterlevelsByDateInterval(ctx context.Context, postCode string, dateStart, dateEnd time.Time) ([]model.Waterlevel, error) {
+func (r *HydrologyStatsPostgres) GetWaterlevelsByDateInterval(ctx context.Context, postCode string, dateStart, dateEnd time.Time) ([]model.Waterlevel, error) {
 	var waterlevels []model.Waterlevel
 
 	query := `
