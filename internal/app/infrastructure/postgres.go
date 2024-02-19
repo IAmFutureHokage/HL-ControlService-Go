@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/IAmFutureHokage/HL-ControlService-Go/internal/app/model"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -35,7 +36,7 @@ func (r *HydrologyStatsPostgres) AddControlValue(ctx context.Context, value mode
 	return nil
 }
 
-func (r *HydrologyStatsPostgres) RemoveControlValue(ctx context.Context, id string) error {
+func (r *HydrologyStatsPostgres) RemoveControlValue(ctx context.Context, id uuid.UUID) error {
 
 	sql := `DELETE FROM control_values WHERE id = $1;`
 

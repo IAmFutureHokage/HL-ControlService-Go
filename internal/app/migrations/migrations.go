@@ -2,7 +2,7 @@ package migrations
 
 const CreateTableControlValue = `
 CREATE TABLE IF NOT EXISTS control_values (
-    id TEXT PRIMARY KEY,
+    id UUID PRIMARY KEY,
     post_code TEXT NOT NULL,
     type INTEGER NOT NULL,
     date_start TIMESTAMP NOT NULL,
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS control_values (
 );
 
 CREATE TABLE IF NOT EXISTS waterlevels (
-    id TEXT PRIMARY KEY,
+    id UUID PRIMARY KEY,
     post_code TEXT NOT NULL,
     date TIMESTAMP NOT NULL,
     waterlevel INTEGER NOT NULL
