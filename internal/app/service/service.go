@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 
-	//"fmt"
 	"math"
 	"sync"
 	"time"
@@ -17,7 +16,7 @@ import (
 
 type HydrologyStatsStorage interface {
 	AddControlValue(ctx context.Context, value model.ControlValue) error
-	RemoveControlValue(ctx context.Context, id string) error
+	RemoveControlValue(ctx context.Context, id uuid.UUID) error
 	UpdateControlValues(ctx context.Context, values []model.ControlValue) error
 	GetControlValues(ctx context.Context, postCode string, controlType model.ControlValueType, page, pageSize int) ([]model.ControlValue, int, error)
 	GetControlValuesByDay(ctx context.Context, postCode string, date time.Time) ([]model.ControlValue, error)
@@ -38,7 +37,7 @@ func NewHydrologyStatsService(storage HydrologyStatsStorage) *HydrologyStatsServ
 func (s *HydrologyStatsService) AddControlValue(ctx context.Context, req *pb.AddControlValueRequest) (*pb.AddControlValueResponse, error) {
 
 	controlValue := model.ControlValue{
-		ID:        uuid.New().String(),
+		ID:        uuid.New(),
 		PostCode:  req.GetPostCode(),
 		Type:      model.ControlValueType(req.GetType()),
 		DateStart: req.GetDateStart().AsTime().Truncate(24 * time.Hour),
@@ -51,7 +50,7 @@ func (s *HydrologyStatsService) AddControlValue(ctx context.Context, req *pb.Add
 
 	return &pb.AddControlValueResponse{
 		ControlValue: &pb.ControlValue{
-			Id:        controlValue.ID,
+			Id:        controlValue.ID.String(),
 			PostCode:  controlValue.PostCode,
 			Type:      pb.ControlValueType(controlValue.Type),
 			DateStart: timestamppb.New(controlValue.DateStart),
@@ -62,8 +61,12 @@ func (s *HydrologyStatsService) AddControlValue(ctx context.Context, req *pb.Add
 
 func (s *HydrologyStatsService) RemoveControlValue(ctx context.Context, req *pb.RemoveControlValueRequest) (*pb.RemoveControlValueResponse, error) {
 
-	err := s.storage.RemoveControlValue(ctx, req.GetId())
+	id, err := uuid.Parse(req.GetId())
 	if err != nil {
+		return nil, err
+	}
+
+	if err := s.storage.RemoveControlValue(ctx, id); err != nil {
 		return nil, err
 	}
 
@@ -75,8 +78,14 @@ func (s *HydrologyStatsService) UpdateControlValue(ctx context.Context, req *pb.
 	var controlValues []model.ControlValue
 
 	for _, cv := range req.GetControlValues() {
+
+		id, err := uuid.Parse(cv.GetId())
+		if err != nil {
+			return nil, err
+		}
+
 		controlValues = append(controlValues, model.ControlValue{
-			ID:        cv.GetId(),
+			ID:        id,
 			PostCode:  cv.GetPostCode(),
 			Type:      model.ControlValueType(cv.GetType()),
 			DateStart: cv.DateStart.AsTime().Truncate(24 * time.Hour),
@@ -92,7 +101,7 @@ func (s *HydrologyStatsService) UpdateControlValue(ctx context.Context, req *pb.
 	var updatedControlValues []*pb.ControlValue
 	for _, val := range controlValues {
 		updatedControlValues = append(updatedControlValues, &pb.ControlValue{
-			Id:        val.ID,
+			Id:        val.ID.String(),
 			PostCode:  val.PostCode,
 			Type:      pb.ControlValueType(val.Type),
 			DateStart: timestamppb.New(val.DateStart),
@@ -121,7 +130,7 @@ func (s *HydrologyStatsService) GetControlValues(ctx context.Context, req *pb.Ge
 
 	for _, cv := range controlValues {
 		pbControlValues = append(pbControlValues, &pb.ControlValue{
-			Id:        cv.ID,
+			Id:        cv.ID.String(),
 			PostCode:  cv.PostCode,
 			Type:      pb.ControlValueType(cv.Type),
 			DateStart: timestamppb.New(cv.DateStart),
